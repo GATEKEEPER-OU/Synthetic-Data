@@ -1,0 +1,18 @@
+coding,display,guide_text
+41950-7,Number of steps in 24 hour Measured 1,"'component': [{'display': 'Number of steps in 24 hour Measured 2', 'valueQuantity': {'system': '<UOM>', 'unit': 'Step', 'value': "
+74774-1,"Glucose [Mass/volume] in Serum, Plasma or Blood",'effectiveTiming': {'code': {'coding': [{'code': 
+80489-8,Caffeine intake 24 hour Estimated,"'valueQuantity': {'code': 'mg/(24.h)', 'system': '<UIOM>', 'unit': 'milligrams over 24.h', 'value': "
+8302-2,Body height,"'valueQuantity': {'code': 'cm', 'system': '<UIOM>', 'unit': 'cm', 'value': "
+85354-9,Blood,"'component': [{'display': 'Systolic blood pressure', 'valueQuantity': {'code': 'mm[Hg]', 'system': '<UOM>', 'unit': 'mmHg', 'value': "
+8867-4,Heart rate,"'valueQuantity': {'code': '/min', 'system': '<UOM>', 'unit': 'beats/minute', 'value': "
+9108-2,Fluid intake total 24 hour,"'valueQuantity': {'code': 'ml/(24.h)', 'system': '<UIOM>', 'unit': 'ml/(24.h)', 'value': "
+93829-0,REM sleep duration,'valuePeriod': {'<duration>': 
+93830-8,Light sleep duration,'valuePeriod': {'<duration>': 
+93831-6,Deep sleep duration,'valuePeriod': {'<duration>': 
+93832-4,Sleep duration,'valuePeriod': {'<duration>': 
+floor-climbed,Floors climbed,"'valueQuantity': {'code': '{floor}', 'system': '<UIOM>', 'unit': 'floors', 'value': "
+LP412113-5,Light sleep duration,'valuePeriod': {'<duration>': 
+LA11834-1,Walking,"'component': [{'display': 'Exercise duration', 'valueQuantity': {'code': 's', 'system': '<UOM>', 'unit': 's', 'value': "
+LA11836-6,Running,"'component': [{'display': 'Exercise duration', 'valueQuantity': {'code': 's', 'system': '<UOM>', 'unit': 's', 'value': "
+LA11837-4,Bicycling,"'component': [{'display': 'Exercise duration', 'valueQuantity': {'code': 's', 'system': '<UOM>', 'unit': 's', 'value': "
+LA11838-2,Swimming,"'component': [{'display': 'Exercise duration', 'valueQuantity': {'code': 's', 'system': '<UOM>', 'unit': 's', 'value': "
