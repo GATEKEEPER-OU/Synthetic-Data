@@ -81,7 +81,7 @@ for filename in files:
                  numMissingDisps, numIncorrectDisps, \
                  round(rho, 2), round(p), round(wd,2), round(ks, 2), round(pvalue, 2)]
 
-    #reportDF.to_csv(config.report_file, index=False)
+    reportDF.to_csv(config.report_file, index=False)
 
     # Examples of plots. Will be tidied up for future reporting
     # WIP
