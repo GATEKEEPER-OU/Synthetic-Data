@@ -8,7 +8,7 @@ The SDG trains different RNN models and can be used to generate a dataset about 
 The architecture of the different RNN models had been tailored around as specific configutation of data. 
 These configuration correnspond to GK reference use cases, i.e., clinical studies involving a data collection combining, e.g., MHR, wearable biometric and behavioural data, and self-assessment surveys in the standard FHIR format.
 
-The project consists of 3 main parts
+The project consists of 3 main parts:
 
 1. Generator
 
@@ -20,7 +20,7 @@ The output from the Generator, which is sent to Middleware is in a compressed FH
 
 2. Middleware
 
-The purpose of the Middleware layer is to reformat the generated data and to transfer the data in a secure manner to downstream systems. For example, the code in the Middleware layer converts the compressed FHIR from Generation into tabular format and transfers this data to Evaluation so that statistical analysis could be carried out 
+The purpose of the Middleware layer is to reformat data and to transfer the data in a secure manner to downstream systems. For example, the code in the Middleware layer converts the compressed FHIR from Generation into tabular format and transfers this data to Evaluation so that statistical analysis could be carried out 
 
 3. Evaluation
 
