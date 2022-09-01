@@ -20,68 +20,83 @@ reportDF = pd.DataFrame(columns = columns)
 files = glob.glob(config.RESULT_DIR + "/*.csv")
 
 for filename in files:
-    head, tail = os.path.split(filename)
+  head, tail = os.path.split(filename)
 
-    # Processed filename
-    reportFile = os.path.join(config.EVALUATION_REPORT_DIR, tail)
-    
-    # Archive filename
-    archiveFile = os.path.join(config.ARCHIVE_DIR, tail)
+  # Processed filename
+  reportFile = os.path.join(config.EVALUATION_REPORT_DIR, tail)
+  # Processed Dataframe
+  # processedDF = pd.DataFrame(columns = columns)
 
-    # Processed Dataframe
-    # processedDF = pd.DataFrame(columns = columns)
+  # reading content of csv files
+  df = pd.read_csv(filename)
 
-    # reading content of csv files
-    df = pd.read_csv(filename)
+  # File should only contain 1 user and 1 Temperature
+  user = df.loc[0]['user']
+  temperature = df.loc[0]['Temperature']
+  df.drop(['user', 'Temperature'], axis=1, inplace=True)
+  origDF = df.copy()
 
-    # File should only contain 1 user and 1 Temperature
-    user = df.loc[0]['user']
-    temperature = df.loc[0]['Temperature']
-    df.drop(['user', 'Temperature'], axis=1, inplace=True)
-
-    # Get the user from the evaluation
-    evalDF = evaluationDF.copy()
-    evalDF = evalDF[evalDF['user'] == user]
-    evalDF.drop(['user'], axis=1, inplace=True)
+  # Get the user from the evaluation
+  evalDF = evaluationDF.copy()
+  evalDF = evalDF[evalDF['user'] == user]
+  evalDF.drop(['user'], axis=1, inplace=True)
 
 
-    # As of 26/08/2022 11:30, the timing model is 60% accurate. So we expect missing data.
-    # Nevertheless, the event model is 98% accurate so we expect the data that is generated to be realistic. 
-    
-    # Get the minimum and maximum normTime from the generated data
-    minNT = min(df['normTime'])
-    maxNT = max(df['normTime'])
+  # As of 26/08/2022 11:30, the timing model is 60% accurate. So we expect missing data.
+  # Nevertheless, the event model is 98% accurate so we expect the data that is generated to be realistic. 
+  
+  # Get the minimum and maximum normTime from the generated data
+  minNT = min(df['normTime'])
+  maxNT = max(df['normTime'])
 
-    generatedDisps = set(df["display"])
+  generatedDisps = set(df["display"])
 
-    evalDF = evalDF.loc[(evalDF['normTime'] >= minNT) & (evalDF['normTime'] <= maxNT)]
-    evaluationDisps = set(evalDF["display"])
+  evalDF = evalDF.loc[(evalDF['normTime'] >= minNT) & (evalDF['normTime'] <= maxNT)]
+  evaluationDisps = set(evalDF["display"])
 
-    # We are interested in the common displays
-    generatedData = generatedDisps.intersection(evaluationDisps)
+  # We are interested in the common displays
+  generatedData = generatedDisps.intersection(evaluationDisps)
 
-    numMissingDisps = len(evaluationDisps.difference(generatedDisps))
-    numIncorrectDisps = len(generatedDisps.difference(evaluationDisps))
+  numMissingDisps = len(evaluationDisps.difference(generatedDisps))
+  numIncorrectDisps = len(generatedDisps.difference(evaluationDisps))
 
-    # Use the mean if there are duplicates 
-    evalDF = evalDF.groupby(['normTime', 'code', 'display']).mean('value').reset_index()
-    df = df.groupby(['normTime', 'code', 'display']).mean('value').reset_index()
+  # Use the mean if there are duplicates 
+  evalDF = evalDF.groupby(['normTime', 'code', 'display']).mean('value').reset_index()
+  df = df.groupby(['normTime', 'code', 'display']).mean('value').reset_index()
 
-    # Stats
-    combinedDF = pd.merge(evalDF, df, on=['normTime', 'code', 'display'])
-    X1 = combinedDF["value_x"].to_numpy()
-    X2 = combinedDF["value_y"].to_numpy()
+  # Stats
+  combinedDF = pd.merge(evalDF, df, on=['normTime', 'code', 'display'])
+  X1 = combinedDF["value_x"].to_numpy()
+  X2 = combinedDF["value_y"].to_numpy()
 
-    wd = wasserstein_distance(X1, X2)
-    ks, pvalue = ks_2samp(X1, X2)
-    cor = pearsonr(X1, X2).statistic
+  wd = wasserstein_distance(X1, X2)
+  ks, pvalue = ks_2samp(X1, X2)
+  cor = pearsonr(X1, X2).statistic
 
-    userReference = tail.replace(".csv", "")
-    reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), len(generatedDisps),  \
-                 numMissingDisps, numIncorrectDisps, \
-                 round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
+  userReference = tail.replace(".csv", "")
+  reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), len(generatedDisps),  \
+                numMissingDisps, numIncorrectDisps, \
+                round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
 
-    reportDF.to_csv(config.report_file, index=False)
+  # For now we accept files with 
+  # pvalue > 0.05 and cor >= 0.75 or <= -0.75
+  if (pvalue >= 0.05) and (cor >= 0.75 or cor <= -0.75):
+    if numIncorrectDisps > 0:
+      for i in generatedDisps.difference(evaluationDisps):
+        indexes = origDF[origDF['display'] == i].index
+        
+        # droping row based on column value
+        origDF.drop(indexes,inplace=True)
+    try:
+      filen = os.path.join(config.REAL_DIR, tail)
+      origDF.to_csv(filen, index=False)
+      os.remove(filename)
+    except:
+      pass
+  else:
+    filen = os.path.join(config.FAKE_DIR, tail)
+    os.rename(filename, filen)
+
 
     # Examples of plots. Will be tidied up for future reporting
     # WIP
@@ -107,3 +122,5 @@ for filename in files:
     #pp.savefig(plot2, dpi = 300, transparent = True)
     #pp.savefig(plot3, dpi = 300, transparent = True)
     #pp.close()
+
+reportDF.to_csv(config.report_file, index=False)

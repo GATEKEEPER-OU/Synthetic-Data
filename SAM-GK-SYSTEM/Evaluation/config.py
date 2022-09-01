@@ -16,10 +16,11 @@ EVALUATION_REPORT_DIR = os.path.join(WORKING_DIR, "reports")
 report_file = os.path.join(EVALUATION_REPORT_DIR, today.strftime('%Y%m%d%H%M') + ".csv")
 
 # Directory that will hold files we have processed
-ARCHIVE_DIR = os.path.join(WORKING_DIR, "archive")
-ARCHIVE_DIR  = os.path.join(ARCHIVE_DIR, today.strftime('%Y%m%d'))
+EVALUATED_DIR = os.path.join(WORKING_DIR, "evaluated")
+FAKE_DIR  = os.path.join(EVALUATED_DIR, "fake")
+REAL_DIR  = os.path.join(EVALUATED_DIR, "real")
 
-for d in [RESULT_DIR,  EVALUATION_REPORT_DIR, ARCHIVE_DIR]:
+for d in [RESULT_DIR,  EVALUATION_REPORT_DIR, FAKE_DIR, REAL_DIR]:
     # Check whether the specified path exists or not
     isExist = os.path.exists(d)
     if not isExist:
