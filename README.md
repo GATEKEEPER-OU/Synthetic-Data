@@ -18,5 +18,7 @@ The models used to generate text data were trained on approximately 186000 obser
 The output from the Generator, which is sent to Middleware is in a compressed FHIR format.
 
 2. Middleware
+The purpose of the Middleware layer is to reformat the generated data and to transfer the data in a secure manner to downstream systems. For example, the code in the Middleware layer converts the compressed FHIR from Generation into tabular format and transfers this data to Evaluation so that statistical analysis could be carried out 
 
 3. Evaluation
+Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". This information is passed back to the Middleware layer.
