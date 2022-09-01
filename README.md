@@ -11,6 +11,7 @@ These configuration correnspond to GK reference use cases, i.e., clinical studie
 The project consists of 3 main parts
 
 1. Generator
+
 The Generator is where the Data Generation process occurs. 
 
 The models used to generate text data were trained on approximately 186000 observations from a period of approximately 6 months. Approximately 123000 of the observations were related to sleep duration and 44000 to heart rate. The remaining observations were Floors climbed, Body height, Blood Pressure, "Glucose [Mass/volume] in Serum, Plasma or Blood", Fluid Intake, calories and exercise duration related to Walking Swimmimg, Running, Bicycling and Steps in a 24 hour period.
@@ -18,7 +19,9 @@ The models used to generate text data were trained on approximately 186000 obser
 The output from the Generator, which is sent to Middleware is in a compressed FHIR format.
 
 2. Middleware
+
 The purpose of the Middleware layer is to reformat the generated data and to transfer the data in a secure manner to downstream systems. For example, the code in the Middleware layer converts the compressed FHIR from Generation into tabular format and transfers this data to Evaluation so that statistical analysis could be carried out 
 
 3. Evaluation
+
 Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". This information is passed back to the Middleware layer.
