@@ -11,7 +11,7 @@ from scipy.stats import pearsonr
 evaluationDF = pd.read_csv(config.evaluation_file)
 
 columns = ['userReference', 'Temperature', 'numDisplaysGenerated', 'numDisplaysMissing', 'numDisplaysIncorrect', \
-           'Pearson Correlation', 'PC p-value', \
+           'Pearson Correlation', \
            'Wasserstein', 'Kolmogorov-Smirnov', 'KS p-value']
 
 reportDF = pd.DataFrame(columns = columns)
@@ -74,12 +74,12 @@ for filename in files:
 
     wd = wasserstein_distance(X1, X2)
     ks, pvalue = ks_2samp(X1, X2)
-    rho, p = pearsonr(X1, X2)
+    cor = pearsonr(X1, X2).statistic
 
     userReference = tail.replace(".csv", "")
     reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), len(generatedDisps),  \
                  numMissingDisps, numIncorrectDisps, \
-                 round(rho, 2), round(p), round(wd,2), round(ks, 2), round(pvalue, 2)]
+                 round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
 
     reportDF.to_csv(config.report_file, index=False)
 
