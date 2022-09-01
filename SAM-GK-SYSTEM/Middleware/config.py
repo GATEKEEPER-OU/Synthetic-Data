@@ -12,8 +12,10 @@ GENERATOR_RESULT_DIR = os.path.join(WORKING_DIR, "generator_files")
 # Directory that will hold the processed result files
 GENERATOR_PROCESSED_DIR = os.path.join(WORKING_DIR, "generator_processed")
 
-# Directory that will hold the evaluated processed result files that can be transferred
-EVALUATED_DIR = os.path.join(WORKING_DIR, "evaluated_results")
+# Directory that will hold the evaluated processed result files
+EVALUATED_DIR = os.path.join(WORKING_DIR, "evaluated")
+FAKE_DIR  = os.path.join(EVALUATED_DIR, "fake")
+REAL_DIR  = os.path.join(EVALUATED_DIR, "real")
 
 # Directory that will hold files we have processed
 ARCHIVE_DIR = os.path.join(WORKING_DIR, "archive")
@@ -21,7 +23,7 @@ ARCHIVE_DIR = os.path.join(WORKING_DIR, "archive")
 today = datetime.now()
 ARCHIVE_DIR  = os.path.join(ARCHIVE_DIR, today.strftime('%Y%m%d'))
 
-for d in [GENERATOR_PROCESSED_DIR,  GENERATOR_RESULT_DIR, ARCHIVE_DIR, EVALUATED_DIR]:
+for d in [GENERATOR_PROCESSED_DIR,  GENERATOR_RESULT_DIR, ARCHIVE_DIR, FAKE_DIR, REAL_DIR]:
     # Check whether the specified path exists or not
     isExist = os.path.exists(d)
     if not isExist:
