@@ -38,7 +38,7 @@ for filename in files:
       
       display1 = None
       obsJSON = None
-      value = 0
+      value = -1
       
       normTime = row.normTime
       obsTime = row.obsTime
