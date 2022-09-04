@@ -10,7 +10,7 @@ files = glob.glob(config.GENERATOR_RESULT_DIR + "/*.csv")
 
 coding, display, guide_text = get_codings()
 
-columns = ['Observation Time', 'Temperature', 'user', 'normTime', 'code', 'display', 'value']
+columns = ['Observation Time', 'Temperature', 'user', 'normTime', 'code', 'display', 'value', 'observation']
 
 for filename in files:
     head, tail = os.path.split(filename)
@@ -61,7 +61,7 @@ for filename in files:
           pass
 
       if display1 is None:
-          processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, user, normTime, code, display[coding_index], value]
+          processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, user, normTime, code, display[coding_index], value, obs]
       else:
           if 'component' in obsJSON:
             component = obsJSON['component']
@@ -71,7 +71,7 @@ for filename in files:
                 
                 if 'valueQuantity' in compJSON: 
                     value = compJSON['valueQuantity']['value']
-                processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, user, normTime, code, display2, value]
+                processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, user, normTime, code, display2, value, obs]
 
     try:
         processedDF.to_csv(processedFile, index=False)
