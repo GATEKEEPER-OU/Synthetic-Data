@@ -10,7 +10,7 @@ files = glob.glob(config.GENERATOR_RESULT_DIR + "/*.csv")
 
 coding, display, guide_text = get_codings()
 
-columns = ['Observation Time', 'Temperature', 'user', 'normTime', 'code', 'display', 'value', 'observation']
+columns = ['obsTime', 'Temperature', 'normTime', 'coding', 'display', 'value', 'observation']
 
 for filename in files:
     head, tail = os.path.split(filename)
@@ -26,14 +26,12 @@ for filename in files:
 
     # reading content of csv files
     df = pd.read_csv(filename)
-    df.rename(columns = {'Observation Time':'obsTime'}, inplace = True)
 
-    # File should only contain 1 user and 1 temperature
-    user = df.loc[0]['event'].split()[1]
+    # File should only contain 1 temperature
     event_temperature = df.loc[0]['Temperature']
 
     for row in df.itertuples():
-      code = row.event.split()[0]
+      code = row.coding
       coding_index = coding.index(code)
       
       display1 = None
@@ -42,7 +40,7 @@ for filename in files:
       
       normTime = row.normTime
       obsTime = row.obsTime
-      obs = " ".join(row.event.split()[3:])
+      obs = row.observation
 
       try:
           # Parse text to generate tabular data
@@ -61,7 +59,7 @@ for filename in files:
           pass
 
       if display1 is None:
-          processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, user, normTime, code, display[coding_index], value, obs]
+          processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, normTime, code, display[coding_index], value, obs]
       else:
           if 'component' in obsJSON:
             component = obsJSON['component']
@@ -71,7 +69,7 @@ for filename in files:
                 
                 if 'valueQuantity' in compJSON: 
                     value = compJSON['valueQuantity']['value']
-                processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, user, normTime, code, display2, value, obs]
+                processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, normTime, code, display2, value, obs]
 
     try:
         processedDF.to_csv(processedFile, index=False)
