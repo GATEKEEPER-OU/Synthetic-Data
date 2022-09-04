@@ -220,7 +220,7 @@ class DataGenModel:
         timings = sorted(timings, key=_by_time)
         maxTime = timings[-1].split()[2]
         
-        columns = ['Observation Time', 'Temperature', 'normTime', 'event']
+        columns = ['obsTime', 'Temperature', 'normTime', 'coding', 'observation']
         resultsDF = pd.DataFrame(columns = columns)
 
         # We want to generate past times
@@ -233,12 +233,13 @@ class DataGenModel:
             
             start_string = j + " {'display': '" + display[coding_index] + "', " + guide_text[coding_index]
             event = self._generate_events(start_string)
+            observation = " ".join(event.split()[3:])
 
             normTime = j.split()[2]
             generatedTime = timeNow + timedelta(seconds=int(normTime))
             obsTime = generatedTime.strftime("%Y-%b-%d %X")
 
-            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, event]
+            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, code, observation]
 
         resultsDF.to_csv(self.results_file, index=False)
 
