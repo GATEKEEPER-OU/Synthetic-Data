@@ -2,7 +2,9 @@
 
 ### You must have trained models in HDF5 format and the vocabulary files that were saved during training of the model. These scripts were created for testing of the models. For deployment, best practices should be considered.
 
-The necessary directories are set in the config.py file, which should be updated if necessary. See https://www.tensorflow.org/install/docker for Tensorflow Docker deployment.
+The necessary directories are set in the config.py file, which should be updated if necessary.
+
+### dataGenModel.py along with config.py and the files in the static directory represents the Data Generator. It requires access to a model. 
 
 ### test_app.py ((Run Data Generator from command line)
 
