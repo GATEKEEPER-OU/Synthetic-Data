@@ -11,7 +11,7 @@ FAKE_DIR  = os.path.join(EVALUATED_DIR, "fake")
 REAL_DIR  = os.path.join(EVALUATED_DIR, "real")
 
 # Directory that holds result files
-MIDDLEWARE_DIR = os.path.join(".", "Middleware", "evaluated")
+MIDDLEWARE_DIR = os.path.join("..", "Middleware", "evaluated")
 MWFAKE_DIR  = os.path.join(MIDDLEWARE_DIR, "fake")
 MWREAL_DIR  = os.path.join(MIDDLEWARE_DIR, "real")
 
