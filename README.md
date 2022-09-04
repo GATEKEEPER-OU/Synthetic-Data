@@ -8,7 +8,9 @@ The SDG trains different RNN models and can be used to generate a dataset about 
 The architecture of the different RNN models had been tailored around as specific configutation of data. 
 These configuration correnspond to GK reference use cases, i.e., clinical studies involving a data collection combining, e.g., MHR, wearable biometric and behavioural data, and self-assessment surveys in the standard FHIR format.
 
-The project consists of 3 main parts:
+## N.B. As is the case with any text generation Machine Learning model, a model trained to a high degree of accuracy can be used to reconstruct the training data. Therefore the trained model associated with this project should not be made available to those without access to the original data.
+
+## The project consists of 3 main parts:
 
 1. Generator
 
