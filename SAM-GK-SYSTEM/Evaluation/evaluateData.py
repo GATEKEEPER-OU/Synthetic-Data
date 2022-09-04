@@ -10,8 +10,7 @@ from scipy.stats import pearsonr
 # Real Data
 evaluationDF = pd.read_csv(config.evaluation_file)
 
-columns = ['userReference', 'Temperature', 'numDisplaysGenerated', 'numDisplaysMissing', 'numDisplaysIncorrect', \
-           'Pearson Correlation', \
+columns = ['userReference', 'Temperature', 'numIncorrect',  'Pearson Correlation', \
            'Wasserstein', 'Kolmogorov-Smirnov', 'KS p-value']
 
 reportDF = pd.DataFrame(columns = columns)
@@ -22,73 +21,72 @@ files = glob.glob(config.RESULT_DIR + "/*.csv")
 for filename in files:
   head, tail = os.path.split(filename)
 
-  # Processed filename
+  # Report file
   reportFile = os.path.join(config.EVALUATION_REPORT_DIR, tail)
-  # Processed Dataframe
-  # processedDF = pd.DataFrame(columns = columns)
 
   # reading content of csv files
   df = pd.read_csv(filename)
 
-  # File should only contain 1 user and 1 Temperature
-  user = df.loc[0]['user']
+  # File should only contain1 Temperature
   temperature = df.loc[0]['Temperature']
-  df.drop(['user', 'Temperature'], axis=1, inplace=True)
-  origDF = df.copy()
+  df.drop(['Temperature'], axis=1, inplace=True)
 
-  # Get the user from the evaluation
-  evalDF = evaluationDF.copy()
-  evalDF = evalDF[evalDF['user'] == user]
-  evalDF.drop(['user'], axis=1, inplace=True)
+  # We remove rows that have a value of -1. 
+  # This means that either the orignal JSON result was flawed, or
+  # something was missed in the JSON parsing.
+  indexes = df[df['value'] == -1].index
+  df.drop(indexes,inplace=True)
+  numIncorrect = len(indexes)
 
+  wd = ks = pvalue = cor = 0
 
-  # As of 26/08/2022 11:30, the timing model is 60% accurate. So we expect missing data.
-  # Nevertheless, the event model is 98% accurate so we expect the data that is generated to be realistic. 
+  if len(df) > 0:
+    origDF = df.copy()
+
+    evalDF = evaluationDF.copy()
+
+    # As of 26/08/2022 11:30, the timing model is 60% accurate. So we expect missing data.
+    # Nevertheless, the event model is 98% accurate so we expect the data that is generated to be realistic. 
   
-  # Get the minimum and maximum normTime from the generated data
-  minNT = min(df['normTime'])
-  maxNT = max(df['normTime'])
+    # Get the minimum and maximum normTime from the generated data
+    minNT = min(df['normTime'])
+    maxNT = max(df['normTime'])
 
-  generatedDisps = set(df["display"])
+    generatedDisps = set(df["display"])
 
-  evalDF = evalDF.loc[(evalDF['normTime'] >= minNT) & (evalDF['normTime'] <= maxNT)]
-  evaluationDisps = set(evalDF["display"])
+    evalDF = evalDF.loc[(evalDF['normTime'] >= minNT) & (evalDF['normTime'] <= maxNT)]
+    evaluationDisps = set(evalDF["display"])
 
-  # We are interested in the common displays
-  generatedData = generatedDisps.intersection(evaluationDisps)
+    # We are interested in the common displays
+    generatedData = generatedDisps.intersection(evaluationDisps)
 
-  numMissingDisps = len(evaluationDisps.difference(generatedDisps))
-  numIncorrectDisps = len(generatedDisps.difference(evaluationDisps))
+    # Use the mean if there are duplicates. There shouldn't be 
+    evalDF = evalDF.groupby(['normTime', 'coding', 'display']).mean('value').reset_index()
+    df = df.groupby(['normTime', 'coding', 'display']).mean('value').reset_index()
 
-  # Use the mean if there are duplicates 
-  evalDF = evalDF.groupby(['normTime', 'code', 'display']).mean('value').reset_index()
-  df = df.groupby(['normTime', 'code', 'display']).mean('value').reset_index()
+    # Stats
+    combinedDF = pd.merge(evalDF, df, on=['normTime', 'coding', 'display'])
 
-  # Stats
-  combinedDF = pd.merge(evalDF, df, on=['normTime', 'code', 'display'])
-  X1 = combinedDF["value_x"].to_numpy()
-  X2 = combinedDF["value_y"].to_numpy()
+    X1 = combinedDF["value_x"].to_numpy()
+    X2 = combinedDF["value_y"].to_numpy()
 
-  wd = wasserstein_distance(X1, X2)
-  ks, pvalue = ks_2samp(X1, X2)
-  cor = pearsonr(X1, X2).statistic
+    if len(X1) > 1:
+      wd = wasserstein_distance(X1, X2)
+      ks, pvalue = ks_2samp(X1, X2)
+      cor = pearsonr(X1, X2).statistic
+    else:
+      ks = pvalue = cor = 1
 
   userReference = tail.replace(".csv", "")
-  reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), len(generatedDisps),  \
-                numMissingDisps, numIncorrectDisps, \
-                round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
+  reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), \
+                numIncorrect, round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
 
   # For now we accept files with 
   # pvalue > 0.05 and cor >= 0.75 or <= -0.75
   if (pvalue >= 0.05) and (cor >= 0.75 or cor <= -0.75):
-    if numIncorrectDisps > 0:
-      for i in generatedDisps.difference(evaluationDisps):
-        indexes = origDF[origDF['display'] == i].index
-        
-        # droping row based on column value
-        origDF.drop(indexes,inplace=True)
     try:
       filen = os.path.join(config.REAL_DIR, tail)
+      origDF['userReference'] = userReference
       origDF.to_csv(filen, index=False)
       os.remove(filename)
     except:
