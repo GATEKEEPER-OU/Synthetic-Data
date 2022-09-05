@@ -1,7 +1,4 @@
 
-from pydoc import classname
-
-
 class SyntheticDataGenerator:
 
   msg = ""
