@@ -16,7 +16,10 @@ packages = [{include = "synthetic_data"}]
 "Bug Tracker" = "https://github.com/GATEKEEPER-OU/synthetic-data/issues"
 
 [tool.poetry.dependencies]
-python = "^3.9.0"
+python = ">=3.9.0,<3.11"
+uuid = "^1.30"
+tensorflow-cpu = "^2.9.2"
+pandas = "^1.4.4"
 
 
 [build-system]
