@@ -1,4 +1,44 @@
 class DataGenModel:
+    ''' 
+    This class should be used to generate FHIR observations for one individual.
+    The observations are produced by a combination of 2 trained Deep Learning Models.
+    They should exsit in the Keras H5 format.
+    
+    Arguments:
+        max_timings : int
+            The maximum number of timings, or observation times, to generate.
+            At least 1 will be generated. The actual number generated could be less due to:
+                the randomly selected user not having enough timings,
+                the start timing being too late in the sequence timings, or 
+                a prediction error prematurely halting the timing generation.
+        output_file:
+            The filename of a csv file that will hold the generated data
+        start_code: str 
+            A coding which should exist in the generated data
+        event_model: str
+            A model which has been trained using existing FHIR bundles
+        timing_model: str
+            A model which has been trained using existing FHIR bundles. 
+            Used to determine the order and time intervals of observations.
+        events_vocab: str
+            The vocabulary for the event model
+        timings_vocab:
+            The vocabulary for the timing model
+        codings_file: str
+            A static file which contains information that guides the predictions.
+        timingTemperature (Default = 0.1)
+            Optional. Recommend this is kept at the default 
+        eventTemperature (Default = 0.3)
+            Optional. Recommend values between 0.1 and 1
+
+    Output:
+        A csv file
+
+    To run:
+        Import the class
+        Instantiate the class
+        Run the generate_single_user method 
+    '''
     import numpy as np
     from random import randint
     import json
@@ -7,7 +47,8 @@ class DataGenModel:
     import tensorflow as tf
     
     def __init__ (self,
-      n_days: int,
+      max_timings: int,
+      output_file: str,
       start_code: str, 
       event_model: str,
       timing_model: str,
@@ -17,10 +58,9 @@ class DataGenModel:
       timingTemperature = 0.1, 
       eventTemperature = 0.3
     ):
-        self.n_days = n_days
+        self.max_timings = max(1, max_timings)
+        self.output_file = output_file
         self.start_code = start_code
-        self.event_model = event_model
-        self.timing_model = timing_model
         self.codings_file = codings_file
         self.start_code = start_code
         self.timing_temperature = timingTemperature
@@ -30,19 +70,20 @@ class DataGenModel:
         self.TIMING_SEQ_LEN = 6
         self.EVENT_PADDING_END_TOKEN = ";"
         self.EVENT_UNKNOWN_TOKEN = '[UNK]'
-        
-        # The minimum number of timings to attempt to predict
-        self.MIN_TIMINGS = 20
+
+        # Load the models
+        self.timing_model = self.tf.keras.models.load_model(timing_model)
+        self.event_model = self.tf.keras.models.load_model(event_model)
         
         # The number of next characters we want to generate before giving up. 
         # # This is lower than the actual maximum sequence length to account for the starting characters 
         self.EVENT_SEQ_LEN = 620
         
         # Load the vocabulary for timings
-        tf = open(timings_vocab, "r")
+        ef = open(timings_vocab, "r")
         
         # Create timing mappings
-        self.idx_to_word = self.json.load(tf)
+        self.idx_to_word = self.json.load(ef)
         self.idx_to_word = dict((int(idx), word) for (idx, word) in self.idx_to_word.items())
         self.word_to_idx = dict((word, int(idx)) for (idx, word) in self.idx_to_word.items())
             
@@ -59,10 +100,6 @@ class DataGenModel:
         
         # Length of the vocabulary
         self.events_vocab_size = len(self.idx_to_char)
-
-        # Convert days into seconds
-        self.max_seconds = n_days * 86400
-
 
     def _generate_seed_text(self):
         user = self.randint(1, self.MAX_NUM_REAL_USERS)
@@ -97,16 +134,9 @@ class DataGenModel:
             print("Error in input")
         else:
             for _ in range(num_next_words):
-                # Preprocess data - Add Lambda Layer to model? Install Keraa rather than Tensorflow?
-                #token_list = self.tokenizer.texts_to_sequences([seed_text])[0]
-                # Converting our start string to numbers (vectorizing)
                 token_list = [self.word_to_idx[s] for s in seed_text.split()]
                 #token_list = self.tf.expand_dims(token_list, 0)
                 
-                # Does not work in TensorFlow 2.9. Instead, try the line below.
-                # token_list = self.tf.keras.preprocessing.sequence.pad_sequences([token_list], maxlen=self.TIMING_SEQ_LEN-1, padding='pre')
-
-                # Uncomment for Tensorflow 2.9
                 token_list = self.tf.keras.utils.pad_sequences([token_list], maxlen=self.TIMING_SEQ_LEN-1, padding='pre')
                 
                 # Run model to infer next probabilities
@@ -156,7 +186,6 @@ class DataGenModel:
         text_generated = []
             
         self.event_model.reset_states()
-        # num_samples = self.events_vocab_size + 1
             
         for i in range(self.EVENT_SEQ_LEN):
             # Run Model
@@ -176,9 +205,10 @@ class DataGenModel:
                 # Higher temperatures results in more surprising text.
                 # Experiment to find the best setting.
                 predictions = predictions / self.event_temperature
-                    
-                # EXPERIMENTATION: Get a number of samples and select the ID that occurs the most
                 predicted_id = self.tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
+                
+                # EXPERIMENTATION: Get a number of samples and select the ID that occurs the most
+                # num_samples = self.events_vocab_size + 1
                 # predicted_ids = self.tf.random.categorical(predictions, num_samples=num_samples)[-1,0].numpy()
                 # predicted_id = predicted_ids.max()
                     
@@ -204,19 +234,15 @@ class DataGenModel:
         timing = []
         start_text = self._generate_seed_text()
         user = start_text.split()[1]
-
-        # WIP. This is being updated to generate number of days rather than number of timings
-        i = 0   
-        while True:
+            
+        for i in range(self.max_timings):
             if i == 0:
                 # The first call will generate 2 timings
                 result = self._generate_timings(start_text, 4)
                 timings = " ".join(result.split()[0:3])
-                i = i + 1
             elif i == 1:
                 # We already have the timing
                 timings = " ".join(result.split()[3:])
-                i = i + 1
             else:
                 # Now the 2nd timing of the previous is the 1st timing of the next 
                 start_timing = timings
@@ -263,4 +289,4 @@ class DataGenModel:
 
             resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, code, observation]
 
-        return resultsDF
+        resultsDF.to_csv(self.output_file, index = False)
