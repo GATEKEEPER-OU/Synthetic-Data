@@ -19,9 +19,9 @@ class DataGenModel:
         output_file (Default is None):
             The filename of a csv file that will hold the generated data.
             If None, a dataframe is returned, Otherwise athe data is written to the output file.
-        timingTemperature (Default = 0.1)
+        timing_temperature (Default = 0.1)
             Optional. Recommend this is kept at the default 
-        eventTemperature (Default = 0.3)
+        event_temperature (Default = 0.3)
             Optional. Recommend values between 0.1 and 1
 
     Output:
