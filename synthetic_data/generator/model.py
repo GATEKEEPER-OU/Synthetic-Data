@@ -2,7 +2,8 @@ class DataGenModel:
     ''' 
     This class should be used to generate FHIR observations for one individual.
     The observations are produced by a combination of 2 trained Deep Learning Models.
-    They should exsit in the Keras H5 format.
+    They should exsit in the models directory in Keras H5 format. 
+    The vocabulary files should exist in the vocabulary directory.
     
     Arguments:
         max_timings : int
@@ -11,28 +12,22 @@ class DataGenModel:
                 the randomly selected user not having enough timings,
                 the start timing being too late in the sequence timings, or 
                 a prediction error prematurely halting the timing generation.
-        output_file:
-            The filename of a csv file that will hold the generated data
         start_code: str 
             A coding which should exist in the generated data
-        event_model: str
-            A model which has been trained using existing FHIR bundles
-        timing_model: str
-            A model which has been trained using existing FHIR bundles. 
-            Used to determine the order and time intervals of observations.
-        events_vocab: str
-            The vocabulary for the event model
-        timings_vocab:
-            The vocabulary for the timing model
         codings_file: str
             A static file which contains information that guides the predictions.
+        output_file (Default is None):
+            The filename of a csv file that will hold the generated data.
+            If None, a dataframe is returned, Otherwise athe data is written to the output file.
         timingTemperature (Default = 0.1)
             Optional. Recommend this is kept at the default 
         eventTemperature (Default = 0.3)
             Optional. Recommend values between 0.1 and 1
 
     Output:
-        A csv file
+        generate_single_user method:
+            If output file is None, a dataframe is returned to the calling program.
+            Otherwise, the output file is created and None is returned to the calling progam.
 
     To run:
         Import the class
@@ -43,58 +38,64 @@ class DataGenModel:
     from random import randint
     import json
     import pandas as pd
+    import os
    
     import tensorflow as tf
     
     def __init__ (self,
       max_timings: int,
-      output_file: str,
       start_code: str, 
-      event_model: str,
-      timing_model: str,
-      events_vocab: str,
-      timings_vocab: str,
       codings_file: str,
-      timingTemperature = 0.1, 
-      eventTemperature = 0.3
+      output_file = None,
+      timing_temperature = 0.1, 
+      event_temperature = 0.3
     ):
         self.max_timings = max(1, max_timings)
         self.output_file = output_file
         self.start_code = start_code
         self.codings_file = codings_file
         self.start_code = start_code
-        self.timing_temperature = timingTemperature
-        self.event_temperature = eventTemperature
+        self.timing_temperature = timing_temperature
+        self.event_temperature = event_temperature
+
+        VERSION = '1'
 
         self.MAX_NUM_REAL_USERS = 86
         self.TIMING_SEQ_LEN = 6
         self.EVENT_PADDING_END_TOKEN = ";"
         self.EVENT_UNKNOWN_TOKEN = '[UNK]'
 
-        # Load the models
-        self.timing_model = self.tf.keras.models.load_model(timing_model)
-        self.event_model = self.tf.keras.models.load_model(event_model)
-        
         # The number of next characters we want to generate before giving up. 
         # # This is lower than the actual maximum sequence length to account for the starting characters 
         self.EVENT_SEQ_LEN = 620
+
+        # Load the models
+        tmodel = self.os.path.join(self.os.path.dirname(__file__), 'models', VERSION, 'timing_model.h5')
+        emodel = self.os.path.join(self.os.path.dirname(__file__), 'models', VERSION, 'event_model.h5')
+
+        self.timing_model = self.tf.keras.models.load_model(tmodel)
+        self.event_model = self.tf.keras.models.load_model(emodel)
         
-        # Load the vocabulary for timings
-        ef = open(timings_vocab, "r")
+        # Load the vocabulary
+        tvocab = self.os.path.join(self.os.path.dirname(__file__), 'vocabulary', VERSION, 'timings_vocab.json')
+        evocab = self.os.path.join(self.os.path.dirname(__file__), 'vocabulary', VERSION, 'events_vocab.json')
+
+        # Timings
+        tv = open(tvocab, "r")
         
         # Create timing mappings
-        self.idx_to_word = self.json.load(ef)
+        self.idx_to_word = self.json.load(tv)
         self.idx_to_word = dict((int(idx), word) for (idx, word) in self.idx_to_word.items())
         self.word_to_idx = dict((word, int(idx)) for (idx, word) in self.idx_to_word.items())
             
         # Length of the vocabulary   
         self.timings_vocab_size = len(self.idx_to_word) + 1
 
-        # Load the vocabulary for events
-        ef = open(events_vocab, "r")
+        # Events
+        ev = open(evocab, "r")
 
         # Create event mapings
-        self.idx_to_char = self.json.load(ef)
+        self.idx_to_char = self.json.load(ev)
         self.idx_to_char = dict((int(idx), char) for (idx, char) in self.idx_to_char.items())
         self.char_to_idx = dict((char, int(idx)) for (idx, char) in self.idx_to_char.items())    
         
@@ -288,5 +289,10 @@ class DataGenModel:
             obsTime = generatedTime.strftime("%Y-%b-%d %X")
 
             resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, code, observation]
-
-        resultsDF.to_csv(self.output_file, index = False)
+            
+            if self.output_file is None:
+                pass
+            else:
+                resultsDF.to_csv(self.output_file, index = False)
+                resultsDF = None
+        return resultsDF

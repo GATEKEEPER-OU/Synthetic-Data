@@ -226,3 +226,6 @@ $RECYCLE.BIN/
 
 
 # Customs
+synthetic_data/generator/models/*/*.h5
+synthetic_data/generator/vocabulary/*/*.json
+synthetic_data/evaluator/confidential/*.csv
