@@ -1,12 +1,14 @@
-def get_codings(codings_file):
+def _get_codings():
     import pandas as pd
+    import os
+    codings_file = os.path.join(os.path.dirname(__file__), 'codings', 'codings.csv')
     codingDF = pd.read_csv(codings_file)
     coding = codingDF['coding'].values.tolist()
     display = codingDF['display'].values.tolist()
     guide_text = codingDF['guide_text'].values.tolist()
     return coding, display, guide_text
 
-def process(codings_file: str, input_dir: str, output_dir: str):
+def process(input_dir: str, output_dir: str):
     import glob
     import pandas as pd
     import os
@@ -16,7 +18,7 @@ def process(codings_file: str, input_dir: str, output_dir: str):
     files = glob.glob(input_dir + "/*.csv")
 
     # Read codings file
-    coding, display, guide_text = get_codings(codings_file)
+    coding, display, guide_text = _get_codings()
 
     # Columns for ouput dataframe
     columns = ['obsTime', 'Temperature', 'normTime', 'coding', 'display', 'value', 'observation']

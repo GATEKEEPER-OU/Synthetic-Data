@@ -4,6 +4,7 @@ class DataGenModel:
     The observations are produced by a combination of 2 trained Deep Learning Models.
     They should exsit in the models directory in Keras H5 format. 
     The vocabulary files should exist in the vocabulary directory.
+    The codings file should exist in the codings directory.
     
     Arguments:
         max_timings : int
@@ -14,11 +15,9 @@ class DataGenModel:
                 a prediction error prematurely halting the timing generation.
         start_code: str 
             A coding which should exist in the generated data
-        codings_file: str
-            A static file which contains information that guides the predictions.
         output_file (Default is None):
             The filename of a csv file that will hold the generated data.
-            If None, a dataframe is returned, Otherwise athe data is written to the output file.
+            If None, a dataframe is returned, Otherwise the data is written to the output file.
         timing_temperature (Default = 0.1)
             Optional. Recommend this is kept at the default 
         event_temperature (Default = 0.3)
@@ -45,15 +44,12 @@ class DataGenModel:
     def __init__ (self,
       max_timings: int,
       start_code: str, 
-      codings_file: str,
       output_file = None,
       timing_temperature = 0.1, 
       event_temperature = 0.3
     ):
         self.max_timings = max(1, max_timings)
         self.output_file = output_file
-        self.start_code = start_code
-        self.codings_file = codings_file
         self.start_code = start_code
         self.timing_temperature = timing_temperature
         self.event_temperature = event_temperature
@@ -101,6 +97,9 @@ class DataGenModel:
         
         # Length of the vocabulary
         self.events_vocab_size = len(self.idx_to_char)
+
+        # codings file
+        self.codings_file = self.os.path.join(self.os.path.dirname(__file__), 'codings', 'codings.csv')
 
     def _generate_seed_text(self):
         user = self.randint(1, self.MAX_NUM_REAL_USERS)

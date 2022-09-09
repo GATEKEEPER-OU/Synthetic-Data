@@ -20,14 +20,12 @@ class SyntheticDataShared:
     import shutil
     import  glob 
 
-    def __init__ (self,
-      codings_file: str,
-    ):
-        self.codings_file = codings_file
+    def __init__ (self):
+        pass
 
     
     def process_generated(self, input_dir: str, output_dir: str):
-        process(self.codings_file, input_dir, output_dir)
+        process(input_dir, output_dir)
         
     
     # Here we could have a number of real files for a user. Select 1 and remove any excess days
