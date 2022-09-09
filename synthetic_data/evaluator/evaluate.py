@@ -94,22 +94,22 @@ def evaluate(input_dir: str , real_dir: str, fake_dir: str, report_file: str, n_
             try:
                 n_keep_min = minNT
                 n_keep_max = maxNT
-                
+          
                 # Return n_days. If n_seconds is none we keep all
                 if n_seconds is not None:
                     # There may be gaps. We want to keep the best
                     times = sorted(list(origDF['normTime'].unique()))
                     n_between = 0
                     for i, t1 in enumerate(times):
-                        max_time = min(times[t1] + n_seconds, maxNT)
+                        max_time = min(t1 + n_seconds, maxNT)
                         j = i + 1
                         for k, t2 in enumerate(times[j:]):
                             if t2 > max_time:
                                 break
                             if (k-i) > n_between:
                                 n_between = k - i
-                                n_keep_min = times[t1]
-                                n_keep_max = times[t2]
+                                n_keep_min = t1
+                                n_keep_max = t2
                         if max_time == maxNT:
                             # We have the maximum numner
                             break
