@@ -10,7 +10,7 @@ from scipy.stats import pearsonr
 # Real Data
 evaluationDF = pd.read_csv(config.evaluation_file)
 
-columns = ['userReference', 'Temperature', 'numGenerated', 'numIncorrect',  'Pearson Correlation', \
+columns = ['userReference', 'Temperature', 'numIncorrect',  'Pearson Correlation', \
            'Wasserstein', 'Kolmogorov-Smirnov', 'KS p-value']
 
 reportDF = pd.DataFrame(columns = columns)
@@ -30,7 +30,6 @@ for filename in files:
   # File should only contain1 Temperature
   temperature = df.loc[0]['Temperature']
   df.drop(['Temperature'], axis=1, inplace=True)
-  numGenerated = len(df)
 
   # We remove rows that have a value of -1. 
   # This means that either the orignal JSON result was flawed, or
@@ -79,8 +78,8 @@ for filename in files:
       ks = pvalue = cor = 1
 
   userReference = tail.replace(".csv", "")
-  reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), numGenerated, \
-               numIncorrect, round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
+  reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 2), \
+                numIncorrect, round(cor, 2), round(wd,2), round(ks, 2), round(pvalue, 2)]
 
   # For now we accept files with 
   # pvalue > 0.05 and cor >= 0.75 or <= -0.75
@@ -88,44 +87,38 @@ for filename in files:
     try:
       filen = os.path.join(config.REAL_DIR, tail)
       origDF['userReference'] = userReference
-      fileType = "real"
       origDF.to_csv(filen, index=False)
       os.remove(filename)
     except:
       pass
   else:
     filen = os.path.join(config.FAKE_DIR, tail)
-    fileType = "fake"
     os.rename(filename, filen)
 
-  # Examples of plots.
-  import matplotlib.pyplot as plt
-  import seaborn as sns
-  from matplotlib.backends.backend_pdf import PdfPages
-    
-  combinedDF.drop(['normTime'], axis=1, inplace=True)
-    
-  pdfFile = userReference + "_" + str(round(temperature, 2)) + '_' + fileType + ".pdf"
 
-  output_filename = os.path.join(config.EVALUATION_REPORT_DIR, pdfFile)
-  pp = PdfPages(output_filename)
-    
-  pd.plotting.scatter_matrix(combinedDF, diagonal="kde")
-  pp.savefig(dpi = 300, transparent = True)
-  plt.close()
-    
-  pd.plotting.scatter_matrix(combinedDF, diagonal="hist")
-  pp.savefig(dpi = 300, transparent = True)
-  plt.close()
-    
-  sns.lmplot(x = "value_x", y = "value_y", data=combinedDF, hue="display", fit_reg=False)
-  pp.savefig(dpi = 300, transparent = True)
-  plt.close()
+    # Examples of plots. Will be tidied up for future reporting
+    # WIP
+    #import matplotlib.pyplot as plt
+    #import seaborn as sns
+    #from matplotlib.backends.backend_pdf import PdfPages
+    #combinedDF.drop(['normTime'], axis=1, inplace=True)
 
-  ax = combinedDF[["value_x", "value_y"]].plot()
-  #ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-  pp.savefig(dpi = 300, transparent = True)
-  plt.close()
-  pp.close()
+    #output_filename = os.path.join(config.EVALUATION_REPORT_DIR, userReference + ".pdf")
+    #pp = PdfPages(output_filename)
+    
+    #plot1 = plt.figure(1)
+    #pd.plotting.scatter_matrix(combinedDF, diagonal="kde")
+    #pp.savefig(plot1, dpi = 300, transparent = True)
+    
+    #plot2 = plt.figure(2)
+    #ax2 = sns.lmplot(x = "value_x", y = "value_y", data=combinedDF, hue="display", fit_reg=False)
+
+    #plot3 = plt.figure(3)
+    #ax3 = combinedDF[["value_x", "value_y"]].plot()
+    #ax3.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+    #pp.savefig(plot2, dpi = 300, transparent = True)
+    #pp.savefig(plot3, dpi = 300, transparent = True)
+    #pp.close()
 
 reportDF.to_csv(config.report_file, index=False)
