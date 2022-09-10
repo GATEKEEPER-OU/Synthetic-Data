@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "synthetic-data"
+version = "0.1.0"
+description = ""
+authors = [
+  "Audrey Ekuban <audrey.ekuban@open.ac.uk>",
+  "Riccardo Pala <riccardo.pala@open.ac.uk>"
+]
+readme = "README.md"
+# homepage = ""
+repository = "https://github.com/GATEKEEPER-OU/synthetic-data"
+# documentation = ""
+packages = [{include = "synthetic_data"}]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/GATEKEEPER-OU/synthetic-data/issues"
+
+[tool.poetry.dependencies]
+python = ">=3.9.0,<3.11"
+uuid = "^1.30"
+tensorflow-cpu = "^2.9.2"
+pandas = "^1.4.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

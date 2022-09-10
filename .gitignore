@@ -1,8 +1,5 @@
-*.h5
-evaluation.csv
-
-# Created by https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,python
-# Edit at https://www.toptal.com/developers/gitignore?templates=macos,visualstudiocode,python
+# Created by https://www.toptal.com/developers/gitignore/api/windows,macos,python
+# Edit at https://www.toptal.com/developers/gitignore?templates=windows,macos,python
 
 ### macOS ###
 # General
@@ -199,29 +196,38 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-### VisualStudioCode ###
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+### Windows ###
+# Windows thumbnail cache files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
 
-# Local History for Visual Studio Code
-.history/
+# Dump file
+*.stackdump
 
-# Built Visual Studio Code Extensions
-*.vsix
+# Folder config file
+[Dd]esktop.ini
 
-### VisualStudioCode Patch ###
-# Ignore all local history of files
-.history
-.ionide
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
 
-# Support for Project snippet scope
-.vscode/*.code-snippets
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
 
-# Ignore code-workspaces
-*.code-workspace
+# Windows shortcuts
+*.lnk
 
-# End of https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,python
+# End of https://www.toptal.com/developers/gitignore/api/windows,macos,python
+
+
+# Customs
+synthetic_data/generator/models/*/*.h5
+synthetic_data/generator/vocabulary/*/*.json
+synthetic_data/generator/codings/*.csv
+synthetic_data/evaluator/confidential/*.csv
+synthetic_data/shared/codings/*.csv
