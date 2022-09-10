@@ -26,4 +26,4 @@ The purpose of the Shared layer is to reformat data and to transfer the data in 
 
 3. Evaluator
 
-Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". This information is passed back to the Middleware layer.
+Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". This information is passed back to the Shared layer.
