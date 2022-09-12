@@ -251,7 +251,7 @@ class DataGenModel:
 
             # Enhancement: Implement Retries   
             if (timings.split()[1] != user) or not timings.split()[-1].isdigit() or (timings.split()[0] not in coding):
-                print("Incorrect timing generated: ", timings)
+                print("Incorrect timing generated")
                 # Exit if returned user is differrent to input user or if time is not an integer or coding is not known
                 break
         
@@ -268,7 +268,7 @@ class DataGenModel:
         timings = sorted(timings, key=_by_time)
         maxTime = timings[-1].split()[2]
         
-        columns = ['obsTime', 'Temperature', 'normTime', 'coding', 'observation']
+        columns = ['obsTime', 'Temperature', 'user', 'normTime', 'coding', 'observation']
         resultsDF = self.pd.DataFrame(columns = columns)
 
         # We want to generate past times
@@ -286,8 +286,10 @@ class DataGenModel:
             normTime = j.split()[2]
             generatedTime = timeNow + timedelta(seconds=int(normTime))
             obsTime = generatedTime.strftime("%Y-%b-%d %X")
+            
+            user = 'REDACTED"
 
-            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, code, observation]
+            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, user, normTime, code, observation]
             
             if self.output_file is None:
                 pass
