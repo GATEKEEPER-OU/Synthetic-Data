@@ -1,9 +1,9 @@
 #from evaluate import evaluate
-from synthetic_data.evaluator.evaluate import evaluate
+from synthetic_data.evaluator.processor.process import process
+from synthetic_data.evaluator.processor.evaluate import evaluate
+from synthetic_data.evaluator.processor.postprocess import postprocess
 
 class SyntheticDataEvaluator:
-  import shutil
-  import glob
 
   msg = ""
 
@@ -12,17 +12,16 @@ class SyntheticDataEvaluator:
   def __init__(self, n_days=None):
     self.n_days = n_days
     self.msg = "SyntheticDataEvaluator"
-
-  def evaluate_processed(self, dataset_dir: str , real_dir: str, fake_dir: str, report_dir: str):
-    #print("%s" % self.msg)
+    print("%s" % self.msg)
     #print(" - dataset: %s" % dataset)
-    evaluate(dataset_dir, real_dir, fake_dir, report_dir, self.n_days)
+
+  def process_generated(self, codings_dir: str, input_dir: str, output_dir: str):
+        process(codings_dir, input_dir, output_dir) 
 
 
-  def transfer(self, input_dir: str, output_dir: str):
-    
-    # Get the csv files from the input directory
-    files = self.glob.glob(input_dir + "/*.csv")
+  def evaluate_processed(self, evaluate_dir: str, dataset_dir: str, real_dir: str, fake_dir: str, report_dir: str):
+    evaluate(evaluate_dir, dataset_dir, real_dir, fake_dir, report_dir, self.n_days)
 
-    for filename in files:
-      self.shutil.copy(filename, output_dir)
+
+  def postprocess_evaluated(self, input_dir: str, output_dir: str):
+      postprocess(input_dir, output_dir)
