@@ -10,7 +10,7 @@ These configuration correnspond to GK reference use cases, i.e., clinical studie
 
 ## N.B. As is the case with any text generation Machine Learning model, a model trained to a high degree of accuracy can be used to reconstruct the training data. Therefore the trained model associated with this project should not be made available to those who have not been granted access to the original data.
 
-## The project consists of 3 main parts:
+## The project consists of 2 main parts:
 
 1. Generator
 
@@ -33,12 +33,6 @@ vocabulary/events_vocab.json
 codings/codings.csv
 
 
+2. Evaluator
 
-
-2. Shared
-
-The purpose of the Shared layer is to reformat data and to transfer the data in a secure manner to downstream systems. For example, the code in the Shared layer converts the compressed FHIR from Generation into tabular format and transfers this data to Evaluation so that statistical analysis could be carried out
-
-3. Evaluator
-
-Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". This information is passed back to the Shared layer.
+Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". 
