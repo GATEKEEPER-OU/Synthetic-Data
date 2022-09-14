@@ -88,12 +88,12 @@ def evaluate(evaluate_dir: str, input_dir: str , real_dir: str, fake_dir: str, r
             if len(X1) > 1:
                 wd = wasserstein_distance(X1, X2)
                 ks, pvalue = ks_2samp(X1, X2)
-            else:
+            elif len(X1) == 1:
                 wd = ks = 0
                 pvalue = 1
 
         if len(df) > 0:
-            combinedDF.drop(["value_x", "value_y"], axis=1, inplace=True)
+            combinedDF.drop(["value_x", "value_y", "Temperature"], axis=1, inplace=True)
             origDF = pd.merge(combinedDF, origDF, on=['normTime', 'coding', 'display'])
 
         userReference = tail.replace(".csv", "")

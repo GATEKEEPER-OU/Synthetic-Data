@@ -77,8 +77,9 @@ def process(codings_dir: str, input_dir: str, output_dir: str):
                         for compJSON in component:
                             display2 = display1 + " - " + compJSON['display']
                 
-                            if 'valueQuantity' in compJSON: 
-                                value = compJSON['valueQuantity']['value']
+                            if 'valueQuantity' in compJSON:
+                                if 'value' in  compJSON['valueQuantity']:
+                                    value = compJSON['valueQuantity']['value']
                             processedDF.loc[len(processedDF.index)] = [obsTime, event_temperature, normTime, code, display2, value, obs]
             try:
                 processedDF.to_csv(processedFile, index=False)

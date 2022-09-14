@@ -32,7 +32,7 @@ def postprocess(input_dir: str, output_dir: str):
     glucose = "code': {'coding': [{'code': '74774-1', 'Glucose [Mass/volume] in Serum, Plasma or Blood', 'system': '<loinc>'}]}"
 
     # Columns for ouput dataframe
-    columns = ['obsTime', 'start', 'end', 'text', 'value', 'observation']
+    columns = ['obsTime', 'start', 'end', 'Temperature', 'text', 'value', 'observation']
 
     # Get the csv files from the real directory
     files = glob.glob(input_dir + "/*.csv")
@@ -55,6 +55,7 @@ def postprocess(input_dir: str, output_dir: str):
             obsTime = row.obsTime
             value = row.value
             observation = row.observation
+            temperature = row.Temperature
 
             if coding == 'floor-climbed':
                 line = line.replace("Floors climbed", floor_climbed)
@@ -106,10 +107,13 @@ def postprocess(input_dir: str, output_dir: str):
                 dt_object = datetime.strptime(obsTime, format)
             
                 end = obsTime
-                obsTime = None
+                # obsTime = None
                 start = dt_object - timedelta(seconds=int(value))
                 start = start.strftime("%Y-%b-%d %X")
 
-            processedDF.loc[len(processedDF.index)] = [obsTime, start, end, line, value, observation]
+            processedDF.loc[len(processedDF.index)] = [obsTime, start, end, temperature, line, value, observation]
+
+        processedDF = processedDF.pivot(index=['obsTime', 'start', 'end', 'Temperature', 'value'], columns= ['text'], values =['observation'])
+        processedDF = processedDF['observation'].reset_index()
 
         processedDF.to_csv(processedFile, index = False) 
