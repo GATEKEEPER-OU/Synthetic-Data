@@ -13,8 +13,8 @@ class DataGenModel:
                 the randomly selected user not having enough timings,
                 the start timing being too late in the sequence timings, or 
                 a prediction error prematurely halting the timing generation.
-        start_code: str 
-            A coding which should exist in the generated data
+        model_dir: str 
+            The directory that holds models th
         output_file (Default is None):
             The filename of a csv file that will hold the generated data.
             If None, a dataframe is returned, Otherwise the data is written to the output file.
@@ -43,18 +43,16 @@ class DataGenModel:
     
     def __init__ (self,
       max_timings: int,
-      start_code: str, 
+      model_dir: str, 
       output_file = None,
       timing_temperature = 0.1, 
       event_temperature = 0.3
     ):
         self.max_timings = max(1, max_timings)
         self.output_file = output_file
-        self.start_code = start_code
+        self.model_dir = model_dir
         self.timing_temperature = timing_temperature
         self.event_temperature = event_temperature
-
-        VERSION = '1'
 
         self.MAX_NUM_REAL_USERS = 86
         self.TIMING_SEQ_LEN = 6
@@ -66,15 +64,15 @@ class DataGenModel:
         self.EVENT_SEQ_LEN = 620
 
         # Load the models
-        tmodel = self.os.path.join(self.os.path.dirname(__file__), 'models', VERSION, 'timing_model.h5')
-        emodel = self.os.path.join(self.os.path.dirname(__file__), 'models', VERSION, 'event_model.h5')
+        tmodel = self.os.path.join(self.model_dir, 'model', 'timing_model.h5')
+        emodel = self.os.path.join(self.model_dir, 'model', 'event_model.h5')
 
         self.timing_model = self.tf.keras.models.load_model(tmodel)
         self.event_model = self.tf.keras.models.load_model(emodel)
         
         # Load the vocabulary
-        tvocab = self.os.path.join(self.os.path.dirname(__file__), 'vocabulary', VERSION, 'timings_vocab.json')
-        evocab = self.os.path.join(self.os.path.dirname(__file__), 'vocabulary', VERSION, 'events_vocab.json')
+        tvocab = self.os.path.join(self.model_dir, 'vocabulary', 'timings_vocab.json')
+        evocab = self.os.path.join(self.model_dir, 'vocabulary', 'events_vocab.json')
 
         # Timings
         tv = open(tvocab, "r")
@@ -99,14 +97,19 @@ class DataGenModel:
         self.events_vocab_size = len(self.idx_to_char)
 
         # codings file
-        self.codings_file = self.os.path.join(self.os.path.dirname(__file__), 'codings', 'codings.csv')
+        self.codings_file = self.os.path.join(self.model_dir, 'codings', 'codings.csv')
 
-    def _generate_seed_text(self):
+        
+    def _generate_seed_text(self, coding):
+        # Assumes that "code user" exists
+        coding_len = len(coding)
+        start_code_indx = self.randint(0, coding_len-1)
+        start_code = coding[start_code_indx]
         user = self.randint(1, self.MAX_NUM_REAL_USERS)
         if user == 82:
           # There was an issue with user 82, so this is rejected
           user = 83
-        return self.start_code + " " + str(user)
+        return start_code + " " + str(user)
 
 
     def _get_codings(self):
@@ -232,7 +235,7 @@ class DataGenModel:
              
         # Generate Timings
         timing = []
-        start_text = self._generate_seed_text()
+        start_text = self._generate_seed_text(coding)
         user = start_text.split()[1]
             
         for i in range(self.max_timings):
@@ -268,7 +271,7 @@ class DataGenModel:
         timings = sorted(timings, key=_by_time)
         maxTime = timings[-1].split()[2]
         
-        columns = ['obsTime', 'Temperature', 'user', 'normTime', 'coding', 'observation']
+        columns = ['obsTime', 'Temperature', 'normTime', 'coding', 'observation']
         resultsDF = self.pd.DataFrame(columns = columns)
 
         # We want to generate past times
@@ -286,10 +289,8 @@ class DataGenModel:
             normTime = j.split()[2]
             generatedTime = timeNow + timedelta(seconds=int(normTime))
             obsTime = generatedTime.strftime("%Y-%b-%d %X")
-            
-            user = 'REDACTED"
 
-            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, user, normTime, code, observation]
+            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, code, observation]
             
             if self.output_file is None:
                 pass
