@@ -1,9 +1,4 @@
 import os
-import sys
-fpath = os.path.join(os.path.dirname(__file__), "..", "..", "synthetic-data")
-sys.path.append(fpath)
-
-import os
 from datetime import datetime
 from synthetic_data.evaluator.evaluator import SyntheticDataEvaluator
 
