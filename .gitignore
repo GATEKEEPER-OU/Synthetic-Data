@@ -227,6 +227,8 @@ $RECYCLE.BIN/
 
 # Customs
 out/*
+datasets/*
+tests/reports/*.csv
 tests/bundles/**/*.h5
 tests/bundles/**/*.csv
 tests/bundles/**/*.json

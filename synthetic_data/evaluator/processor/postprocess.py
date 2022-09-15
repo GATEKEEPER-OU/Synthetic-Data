@@ -1,4 +1,3 @@
-
 def postprocess(input_dir: str, output_dir: str):
     # Hastily done. Mappings should be treated as static
     import glob

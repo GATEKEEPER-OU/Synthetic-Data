@@ -8,8 +8,9 @@ def main():
   timestamp = datetime.now()
 
   # For this demo, this is the directory that holds the files that are to be evaluated
-  output_dir = os.path.join('out', 'generated', timestamp.strftime('%Y%m%d%H%M'))
-  os.makedirs(output_dir)
+  output_dir = os.path.join('out', timestamp.strftime('%Y%m%d%H%M%S'))
+  if not os.path.exists(output_dir):
+      os.makedirs(output_dir)
 
   syntdatag = SyntheticDataGenerator(bundle_dir)
 

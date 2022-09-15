@@ -1,7 +1,12 @@
+import glob
+import pandas as pd
+import os
+import json
+
 def _get_codings(codings_dir):
     import pandas as pd
     import os
-    codings_file = os.path.join(codings_dir, 'codings.csv')
+    codings_file = os.path.join(codings_dir, 'codings', 'codings.csv')
     codingDF = pd.read_csv(codings_file)
     coding = codingDF['coding'].values.tolist()
     display = codingDF['display'].values.tolist()
@@ -9,11 +14,6 @@ def _get_codings(codings_dir):
     return coding, display, guide_text
 
 def process(codings_dir: str, input_dir: str, output_dir: str):
-    import glob
-    import pandas as pd
-    import os
-    import json
-
     print(f'Processing files  in {input_dir}')
 
     # Get the csv files from the input directory

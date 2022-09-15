@@ -12,7 +12,7 @@ def evaluate(evaluate_dir: str, input_dir: str , real_dir: str, fake_dir: str, r
     # Confirm with Data Controller before sharing with third-parties.
     # Of course, code can be hacked, so simply reading file from secure location offers no security.
     # Code will also need to be locked down.
-    evalFile = os.path.join(evaluate_dir, 'evaluation.csv')
+    evalFile = os.path.join(evaluate_dir, 'confidential', 'evaluation.csv')
     evaluationDF = pd.read_csv(evalFile)
 
     n_seconds = None
@@ -42,8 +42,6 @@ def evaluate(evaluate_dir: str, input_dir: str , real_dir: str, fake_dir: str, r
 
         # File should only contain one user
         #user = df.loc[0]['user']
-        #if user == 16:
-        #    print(filename)
         #df.drop(['user'], axis=1, inplace=True)
 
         # We remove rows that have a value of -1. 
