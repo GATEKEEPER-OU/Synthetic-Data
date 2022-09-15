@@ -75,7 +75,8 @@ def process(codings_dir: str, input_dir: str, output_dir: str):
                         component = obsJSON['component']
                   
                         for compJSON in component:
-                            display2 = display1 + " - " + compJSON['display']
+                            if 'display' in compJSON:
+                                display2 = display1 + " - " + compJSON['display']
                 
                             if 'valueQuantity' in compJSON:
                                 if 'value' in  compJSON['valueQuantity']:
