@@ -33,7 +33,7 @@ class SyntheticDataEvaluator:
     evaluate(self.bundle_path, dataset_dir, real_dir, fake_dir, report_dir, n_days)
 
   # Add data to the "real" file so that the FHIR data can be constructed.
-  # The construction to FHIR data  is done by a downstream system 
+  # The construction to FHIR data  is done by a downstream system
   def postprocess_evaluated(self, input_dir: str, output_dir: str):
     '''
       input_dir:  Directory containing the evaluated real data files
