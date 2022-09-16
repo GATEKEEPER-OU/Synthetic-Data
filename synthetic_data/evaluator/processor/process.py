@@ -3,9 +3,8 @@ import pandas as pd
 import os
 import json
 
+
 def _get_codings(codings_dir):
-    import pandas as pd
-    import os
     codings_file = os.path.join(codings_dir, 'codings', 'codings.csv')
     codingDF = pd.read_csv(codings_file)
     coding = codingDF['coding'].values.tolist()

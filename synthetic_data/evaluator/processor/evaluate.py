@@ -1,4 +1,4 @@
-def evaluate(evaluate_dir: str, input_dir: str , real_dir: str, fake_dir: str, report_file: str, n_days = None):
+def evaluate(evaluate_dir: str, input_dir: str , real_dir: str, fake_dir: str, n_days = None):
     import glob
     import os
     import pandas as pd
@@ -133,6 +133,3 @@ def evaluate(evaluate_dir: str, input_dir: str , real_dir: str, fake_dir: str, r
 
         reportDF.loc[len(reportDF.index)] = [userReference, round(temperature, 1), numGenerated, \
                numIncorrect, round(wd,2), round(ks, 2), round(pvalue, 2), evaluation]
-
-    # Examples plots have been removed. Too much for a simple demo.
-    reportDF.to_csv(report_file, index=False)

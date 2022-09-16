@@ -3,48 +3,32 @@ from datetime import datetime
 from synthetic_data.evaluator.evaluator import SyntheticDataEvaluator
 
 def main():
-  timestamp = datetime.now()
+
   tests_dir = os.path.dirname(os.path.realpath(__file__))
   bundle_dir =  os.path.join(tests_dir, 'bundles', 'evaluator', 'v0.1.0')
-  input_dir = os.path.join('out', '20220915154715') # The generated data
-
-  # If rerunning delete "real" directory
-  output_dir = os.path.join(tests_dir, 'out', '20220915154715', 'real') # The evaluated data for transfer
-  if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-
-  dataset_dir = os.path.join(tests_dir, 'datasets', timestamp.strftime('%Y%m%d%H%M%S'))
-
-  # This is the directory that holds the processed files
-  processed_dir = os.path.join(dataset_dir, 'processed')
-  if not os.path.exists(processed_dir):
-    os.makedirs(processed_dir)
-
-  # This is the directory that holds the files that are real
-  real_dir = os.path.join(dataset_dir, 'real')
+  
+  input_dir = os.path.join(tests_dir, 'out') # The generated data
+  
+  real_dir = os.path.join(input_dir, 'real')
   if not os.path.exists(real_dir):
-    os.makedirs(real_dir)
+      os.makedirs(real_dir)
 
-  # This is the directory that holds the files that are fake
-  fake_dir = os.path.join(dataset_dir, 'fake')
-  if not os.path.exists(fake_dir):
-    os.makedirs(fake_dir)
+  discard_dir = os.path.join(input_dir, 'discard')
+  if not os.path.exists(discard_dir):
+      os.makedirs(discard_dir)
 
-  # This is the directory that holds reports. Should exist.
-  report_file = os.path.join('tests', 'reports', timestamp.strftime('%Y%m%d%H%M%S') + ".csv")
+  working_dir = os.path.join(input_dir, 'working')
+  if not os.path.exists(working_dir):
+      os.makedirs(working_dir)
 
-  syntdatae = SyntheticDataEvaluator(bundle_dir)
+  syntdatae = SyntheticDataEvaluator(
+    bundle_dir, 
+    real_dir,
+    working_dir, 
+    discard_dir = discard_dir)
 
-  print("Processing Data")
-  syntdatae.process_generated(input_dir, processed_dir)
-  print()
-
-  print("Evaluating Data")
-  syntdatae.evaluate_processed(processed_dir, real_dir, fake_dir, report_file, 1)
-  print()
-
-  print("Post Processing Data")
-  syntdatae.postprocess_evaluated(real_dir, output_dir)
+  print("Evaluating Generated Data")
+  syntdatae.evaluate_generated(input_dir,  1)
   print()
 
 if __name__ == "__main__":
