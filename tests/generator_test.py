@@ -11,7 +11,9 @@ class GeneratorTestSuite(unittest.TestCase):
     timestamp = datetime.now()
     tests_dir = os.path.dirname(os.path.realpath(__file__))
 
-    self.bundle_dir =  os.path.join(tests_dir, 'bundles', 'generator', 'v0.1.0')
+    #
+    self.bundle_dir =  os.path.join(tests_dir, 'bundles', 'generator', 'v0.1.0') # TODO: check if exists, otherwise logging.error "request bundle installation"
+
     # For this demo, this is the directory that holds the files that are to be evaluated
     self.output_dir = os.path.join(tests_dir, 'out', timestamp.strftime('%Y%m%d%H%M%S'))
     if not os.path.exists(self.output_dir):
