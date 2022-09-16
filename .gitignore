@@ -226,14 +226,9 @@ $RECYCLE.BIN/
 
 
 # Customs
-out/*
-datasets/*
+tests/out/*
+tests/datasets/*
 tests/reports/*.csv
 tests/bundles/**/*.h5
 tests/bundles/**/*.csv
 tests/bundles/**/*.json
-# synthetic_data/generator/models/*/*.h5
-# synthetic_data/generator/vocabulary/*/*.json
-# synthetic_data/generator/codings/*.csv
-# synthetic_data/evaluator/confidential/*.csv
-# synthetic_data/shared/codings/*.csv
