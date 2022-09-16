@@ -1,6 +1,6 @@
 import uuid
 import os
-from synthetic_data.generator.model import DataGenModel
+from synthetic_data.generator.datagen.model import DataGenModel
 
 class SyntheticDataGenerator:
 
