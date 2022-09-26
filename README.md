@@ -32,7 +32,10 @@ vocabulary/events_vocab.json
 
 codings/codings.csv
 
-
 2. Evaluator
 
-Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake". 
+Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake".
+
+## Update 26/09/2022
+
+Data can be now be gerenerated using a Transformer Model. This is in experimental mode, so deployment support is not available at this time. The Model uses a word level approach and thus does not perform as well, in terms of loss, as the RNN character level approach. However, generating data is a lot quicker. Training is ongoing. There will not be a separate Evaluator for the generated data. Instead the generated data will be evaluated against a Doc2Vec model, created from the Training data, using document similarity metrics. This is not a general mode. If evaluating please do so against the relevant Samsung Gatekeeper data.
