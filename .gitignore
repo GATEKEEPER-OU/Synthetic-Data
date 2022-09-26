@@ -230,3 +230,4 @@ tests/out/*
 tests/bundles/**/*.h5
 tests/bundles/**/*.csv
 tests/bundles/**/*.json
+tests/bundles/transformers/*/
