@@ -29,8 +29,7 @@ class SyntheticDataGenerator:
       # The model is dumb. It does not understand days.
       # Well actually, it can only understand what it has been trained on.
       # We will assume 50 max_timings per day.
-      #max_timings = n_days * 50
-      max_timings = 50
+      max_timings = n_days * 50
 
       for i, temperature in enumerate(self.temperatures[:1], start=1):
         # A File could be evaluated as fake in relation to the data that the model is trained on.
