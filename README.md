@@ -10,7 +10,7 @@ These configuration correnspond to GK reference use cases, i.e., clinical studie
 
 ## Update 26/09/2022
 
-Data can be now be gerenerated using a Transformer Model. This is in experimental mode, so deployment support is not available at this time. The Model uses a word level approach and thus does not perform as well, in terms of loss, as the RNN character level approach. However, generating data is a lot quicker. Training is ongoing. There will not be a separate Evaluator for the generated data. Instead the generated data will be evaluated against a Doc2Vec model, created from the Training data, using document similarity metrics. This is not a general mode. If evaluating please do so against the relevant Samsung Gatekeeper data.
+Data can be now be gerenerated using a Transformer Model. This is in experimental mode, so deployment support is not available at this time. The Model uses a word level approach and thus does not perform as well, in terms of loss, as the RNN character level approach. However, generating data is a lot quicker. Training is ongoing. There will not be a separate Evaluator for the generated data. Instead the generated data will be evaluated against a Doc2Vec model, created from the Training data, using document similarity metrics. This is not a general model. If evaluating please do so against the relevant Samsung Gatekeeper data.
 
 ## N.B. As is the case with any text generation Machine Learning model, a model trained to a high degree of accuracy can be used to reconstruct the training data. Therefore the trained model associated with this project should not be made available to those who have not been granted access to the original data.
 
