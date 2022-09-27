@@ -23,13 +23,15 @@ class DataGenModel:
         Instantiate the class
         Run the generate_single_user method
     '''
-    from synthetic_data.transformers.datagen.custom import PositionalEmbedding
+    from synthetic_data.transformers.SAM_GK_FHIR_1.datagen.custom import PositionalEmbedding
     from gensim.models.doc2vec import Doc2Vec
         
     import os
     import tensorflow as tf
     import numpy as np
     import pandas as pd
+
+    np.random.seed(1)
 
     def __init__ (self,
       model_dir: str,
@@ -40,7 +42,7 @@ class DataGenModel:
         self.transformer_vers = transformer_vers
         self.model_dir = model_dir
 
-        self.OBSERVATION_SEQUENCE_LENGTH = 70
+        self.OBSERVATION_SEQUENCE_LENGTH = 72
         self.OBSERVATION_START = "[START]"
         self.OBSERVATION_END = "[END]"
 
@@ -90,7 +92,6 @@ class DataGenModel:
                 random_doc_id = self.np.random.randint(len(self.doc2vec_model.dv))
                 self.start_tag = self.doc2vec_model.dv.index_to_key[random_doc_id]
 
-
                 if "_" not in self.start_tag:
                     # We want a line number, not the whole document
                     self.start_tag = None
@@ -98,9 +99,10 @@ class DataGenModel:
                     break
             
             self.document_tag = self.start_tag
+            # Check start_tag. Maybe someone has been naughty
             if self.start_tag is not None:
-                # Maybe someone has been naughty
                 self.document = self.document_tag.split('_')[0]
+                self.document_vector = self.doc2vec_model.dv[self.document]
                 self.start_observation = int(self.document_tag.split('_')[1])
                 self.direction = 'forward'
         else:
@@ -126,6 +128,11 @@ class DataGenModel:
                     previous_observation =  current_observation - 1
                     self.document_tag = self.document + "_" + str(previous_observation)
 
+    
+    def _check_document_similarity(self, observation):
+        # Compare like for like
+        observation = observation.replace("{", "").replace("}", "").replace(":", "").replace("'", "").replace('display', '').replace("  ", " ")
+
 
     def _get_codings(self):
         # We need this for validation of generated data
@@ -136,22 +143,21 @@ class DataGenModel:
         guide_text = codingDF['guide_text'].values.tolist()
         return coding, display, guide_text
 
+
     # Generate data for one user
-    def generate_single_user(self, temperature, n_days=1):
+    def generate_single_user(self, n_days=1):
         coding, display, guide_text = self._get_codings()
+
         n_secs = n_days * 86400
-        
         self.start_tag = None
 
-        if temperature < 0.2:
-            temperature = 0.2
-
-        columns = ['temperature', 'doc_tag', 'event']
+        columns = ['doc_tag', 'event']
         resultsDF = self.pd.DataFrame(columns = columns)
 
         min_secs  = None
         max_secs = None
         num_secs = 0
+        temperatures = [0.7, 0.8, 0.9, 1.0]
         while True:
             self._get_encoder_input()
             if self.start_tag is None or self.document_tag is None:
@@ -163,50 +169,77 @@ class DataGenModel:
             decoded_output = self.OBSERVATION_START
 
             for i in range(self.OBSERVATION_SEQUENCE_LENGTH):
-                tokenized_target = self.targetTextProcessor([decoded_output])[:, :-1]
+                ok = 0
+                for temperature in temperatures:
+                    tokenized_target = self.targetTextProcessor([decoded_output])[:, :-1]
 
-                predictions = self.transformer.predict([tokenized_input, tokenized_target], verbose=0)
+                    predictions = self.transformer.predict([tokenized_input, tokenized_target], verbose=0)
+                    preds = predictions[0, i, :]
 
-                preds = predictions[0, i, :]
-
-                preds = self.np.asarray(preds).astype("float64")
+                    preds = self.np.asarray(preds).astype("float64")
                 
-                self.np.seterr(divide='ignore')
-                preds = self.np.log(preds) / temperature
-                exp_preds = self.np.exp(preds)
-                preds = exp_preds / self.np.sum(exp_preds)
-                probas = self.np.random.multinomial(1, preds, 1)
+                    self.np.seterr(divide='ignore')
+                    preds = self.np.log(preds) / temperature
+                    exp_preds = self.np.exp(preds)
+                    preds = exp_preds / self.np.sum(exp_preds)
+                    probas = self.np.random.multinomial(1, preds, 1)
  
-                sampled_token_index = self.np.argmax(probas)
-                sampled_token = self.obs_index_lookup[sampled_token_index]
+                    sampled_token_index = self.np.argmax(probas)
+                    sampled_token = self.obs_index_lookup[sampled_token_index]
+
+                    if i == 0 and (sampled_token != self.document):
+                        # Incorrect document
+                        continue
+                    elif i == 1 and (self.document + " " + sampled_token) != input:
+                        # Incorrect document tag
+                        continue
+                    elif i == 2:
+                        if sampled_token.isdigit():
+                            normTime = int(sampled_token)
+                            ok = 1
+                            break
+                        else:
+                            # Invalid time
+                            continue
+                    elif i == 3:
+                        if sampled_token in coding:
+                            code = sampled_token
+                            ok = 1
+                            break
+                        else:
+                            # Invalid Code
+                            continue
+                    else:
+                        ok = 1
+                        break
+                
+                if ok == 0:
+                    break
 
                 if sampled_token == self.OBSERVATION_END:
                     break
                 decoded_output += " " + sampled_token
-            
-            decoded_output = decoded_output.replace(self.OBSERVATION_START, "").strip()
 
-            if decoded_output.split()[0].isdigit() and (decoded_output.split()[1] in coding):
-                coding_index = coding.index(decoded_output.split()[1])
-                if display[coding_index] in decoded_output and guide_text[coding_index] in decoded_output:
-                    if min_secs is None:
-                        min_secs =  max_secs = int(decoded_output.split()[0])
-                    elif min_secs > int(decoded_output.split()[0]):
-                        min_secs = int(decoded_output.split()[0])
-                    elif max_secs < int(decoded_output.split()[0]):
-                        max_secs = int(decoded_output.split()[0])
+            if ok == 0:
+                continue
+            decoded_output = decoded_output.replace(self.OBSERVATION_START, "").strip()
+            print(decoded_output)
+
+            coding_index = coding.index(code)
+            if display[coding_index] in decoded_output and guide_text[coding_index] in decoded_output:
+                if min_secs is None:
+                    min_secs =  max_secs = normTime
+                elif min_secs > normTime:
+                    min_secs = normTime
+                elif max_secs < normTime:
+                    max_secs = normTime
                 
-                    num_secs = max_secs - min_secs
-                    if num_secs < n_secs:
-                        resultsDF.loc[len(resultsDF.index)] = [temperature, self.document_tag, decoded_output]
-                    else:
-                        break
+                decoded_output = " ".join(decoded_output.split()[2:])
+                resultsDF.loc[len(resultsDF.index)] = [self.document_tag, decoded_output]
+                num_secs = max_secs - min_secs
+                if num_secs >= n_secs:
+                    break
             else:
                 continue
-
-            #normTime = decoded_output.split()[0]
-            #code = decoded_output.split()[1]
-            #observation = " ".join(decoded_output()[2:])
-            #resultsDF.loc[len(resultsDF.index)] = [temperature, normTime, code, observation]
 
         return resultsDF
