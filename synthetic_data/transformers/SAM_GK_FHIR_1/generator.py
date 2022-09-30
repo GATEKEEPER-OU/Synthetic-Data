@@ -31,6 +31,7 @@ class SyntheticDataGenerator:
           results_df = data_generator.generate_single_user(n_days)
 
           results_df.to_csv(output_file, index = False)
-          print(f'{output_file} has been generated and is ready to be transferred for evaluation')
-      except:
-          print('Error generating file')
+          print(f'{output_file} has been generated')
+      except Exception as e:
+          print(e)
+          # print('Error generating file')
