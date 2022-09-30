@@ -110,7 +110,6 @@ class DataGenModel:
                 else:
                     # We have exhausted all the tags. Reverse.
                     self.direction = 'backward'
-                    print('Reversing')
             
             if self.direction == 'backward':
                 current_observation = int(self.document_tag.split('_')[1])
@@ -218,8 +217,6 @@ class DataGenModel:
                 observation = " ".join(decoded_output.split()[4:])
                 if code in observation:
                     decoded_outputs.append(observation)
-                else:
-                    print(code, observation)
 
             if len(decoded_outputs) == 0:
                 continue
