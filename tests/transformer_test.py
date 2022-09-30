@@ -9,7 +9,7 @@ fpath = os.path.join(os.path.dirname(__file__), "..", "..", "synthetic-data")
 fpath = os.path.abspath(fpath)
 sys.path.append(fpath)
 
-from synthetic_data.transformers.generator import SyntheticDataGenerator
+from synthetic_data.transformers.SAM_GK_FHIR_1.generator import SyntheticDataGenerator
 
 class GeneratorTestSuite(unittest.TestCase):
 
