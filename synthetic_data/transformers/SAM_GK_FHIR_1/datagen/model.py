@@ -9,10 +9,6 @@ class DataGenModel:
             The directory that holds the models
         transformer_vers:
             The transformer version
-        output_file (Default is None):
-            The filename of a csv file that will hold the generated data.
-            If None, a dataframe is returned, Otherwise the data is written to the output file.
-
     Output:
         generate_single_user method:
             If output file is None, a dataframe is returned to the calling program.
@@ -30,18 +26,17 @@ class DataGenModel:
     import tensorflow as tf
     import numpy as np
     import pandas as pd
+    import json
     #np.random.seed(1)
 
     def __init__ (self,
       model_dir: str,
-      transformer_vers: str,
-      output_file = None,
+      transformer_vers: str
     ):
-        self.output_file = output_file
         self.transformer_vers = transformer_vers
         self.model_dir = model_dir
 
-        self.OBSERVATION_SEQUENCE_LENGTH = 100
+        self.OBSERVATION_SEQUENCE_LENGTH = 98
         self.OBSERVATION_START = "[START]"
         self.OBSERVATION_END = "[END]"
 
@@ -77,59 +72,35 @@ class DataGenModel:
         self.obs_index_lookup = dict(zip(range(len(obs_vocab)), obs_vocab))
 
         
-    def _get_encoder_input(self):
+    def _get_document_input(self):
         # We use a document tag as the input to the encoder
+        tlist = self.doc2vec_model.dv.index_to_key
 
-        if self.start_tag is None:
-            
-            # Get start of sequence
-            for _ in range(50):
-                random_doc_id = self.np.random.randint(len(self.doc2vec_model.dv))
-                self.start_tag = self.doc2vec_model.dv.index_to_key[random_doc_id]
+        random_doc_id = self.np.random.randint(len(self.doc2vec_model.dv))
+        tag = tlist[random_doc_id-1]
+        self.document = tag.split()[0]
 
-                if "_" not in self.start_tag:
-                    # We want a line number, not the whole document
-                    self.start_tag = None
-                else:
-                    break
-            
-            self.document_tag = self.start_tag
-            if self.start_tag is not None:
-                self.document = self.document_tag.split('_')[0]
-                self.document_vector = self.doc2vec_model.dv[self.document]       
-                self.start_observation = int(self.document_tag.split('_')[1])
-                self.direction = 'forward'
-        else:
-            
-            # Get next in sequence
-            if self.direction == 'forward':
-                next_observation = int(self.document_tag.split('_')[1]) + 1
-                current_document_tag = self.document + '_' + str(next_observation)
-                if current_document_tag in self.doc2vec_model.dv:
-                    self.document_tag = current_document_tag
-                else:
-                    # We have exhausted all the tags. Reverse.
-                    self.direction = 'backward'
-            
-            if self.direction == 'backward':
-                current_observation = int(self.document_tag.split('_')[1])
-                if current_observation == 0:
-                    self.document_tag = None
-                else:
-                    if current_observation < self.start_observation:
-                        current_observation = self.start_observation
+        self.tag_list = [x for x in tlist if x.startswith(self.document)]
 
-                    previous_observation =  current_observation - 1
-                    self.document_tag = self.document + "_" + str(previous_observation)
 
+    def _check_doc(self, observationTimeDifference):
+        time_secs = observationTimeDifference.split()
+        
+        if len(time_secs) != 2:
+            return 0
+        
+        if (not time_secs[0].isdigit()) or (time_secs[1] != 'secs'):
+            return 0
+        return int(time_secs[0])
     
-    def _check_document_similarity(self, observations):
+
+    def _check_document_similarity(self, input, observations):
         from sklearn.metrics.pairwise import cosine_similarity
         
         most_similar = -1
         similarity = -1.0
 
-        document_tag_vector = self.doc2vec_model.dv[self.document_tag]
+        document_tag_vector = self.doc2vec_model.dv[input]
 
         for num_obs, observation in enumerate(observations):
             query_tokens = observation.split()
@@ -144,34 +115,36 @@ class DataGenModel:
         return most_similar
 
     # Generate data for one user
-    def generate_single_user(self, n_days=1):
+    def generate_single_user(self, n_days=1, max_times=10):
         from datetime import timezone, datetime, timedelta
-
-        n_secs = n_days * 86400
-        self.start_tag = None
+        timeNow = datetime.now(timezone.utc)
 
         columns = ['normTime', 'observation']
         resultsDF = self.pd.DataFrame(columns = columns)
 
-        min_secs  = None
-        max_secs = None
-        num_secs = 0
+        self._get_document_input()
+        n_times = 0
 
-        while True:
-            self._get_encoder_input()
-            if self.start_tag is None or self.document_tag is None:
+        for input in self.tag_list:
+            if n_times > max_times:
                 break
-            input = self.document_tag.replace("_", " ")
+
+            if int(input.split()[1]) > n_days:
+                # Continue for now. We should probably sort and break
+                continue
+
             tokenized_input= self.sourceTextProcessor([input])
             
+            # TODO: Have one list of lists
             decoded_outputs = []
+            json_outputs = []
+            normTime_list = []
+
             for temp in range(1,11):
-                code = None
                 decoded_output = self.OBSERVATION_START
 
                 # Generate data for different temperatures
                 temperature = 0.1 * temp
-                code = None
 
                 for i in range(self.OBSERVATION_SEQUENCE_LENGTH):
 
@@ -191,66 +164,116 @@ class DataGenModel:
                     sampled_token_index = self.np.argmax(probas)
                     sampled_token = self.obs_index_lookup[sampled_token_index]
 
-                    if i == 0 and (sampled_token != self.document):
-                        # Incorrect document
-                        break
-                    elif i == 1 and (self.document + " " + sampled_token) != input:
-                        # Incorrect document tag
-                        break
-                    elif i == 2:
-                        if sampled_token.isdigit():
-                            normTime = int(sampled_token)
-                        else:
-                            break
-                    elif i == 3:
-                        code = sampled_token
-
                     if sampled_token == self.OBSERVATION_END:
                         break
                     decoded_output += " " + sampled_token
 
-                if code is None:
+                decoded_output = decoded_output.replace(self.OBSERVATION_START, "").strip()
+                decoded_output = input + " " + decoded_output
+
+                observation = " ".join(decoded_output.split()[3:])
+
+                # Verify JSON and update times
+                observation = observation.replace("'", '"')
+                normTime = 0
+
+                try:
+                    obsJSON = self.json.loads(observation)
+                except:
                     continue
 
-                decoded_output = decoded_output.replace(self.OBSERVATION_START, "").strip()
+                if 'effectiveDateTime' in obsJSON:
+                    observationTimeDifference = str(obsJSON['effectiveDateTime'])
+                    normTime = self._check_doc(observationTimeDifference)
+                    if normTime == 0:
+                        continue
+                    obsJSON['effectiveDateTime'] = (timeNow - timedelta(seconds=normTime)).strftime("%Y-%b-%d %X")
+                elif 'valuePeriod' in obsJSON:
+                    if 'end' in obsJSON['valuePeriod']:
+                        end = str(obsJSON['valuePeriod']['end'])
+                        endTime = self._check_doc(end)
+                        if endTime == 0:
+                            normTime = 0
+                            continue
+                        normTime = endTime
+                        obsJSON['valuePeriod']['end'] = (timeNow - timedelta(seconds=endTime)).strftime("%Y-%b-%d %X")
 
-                observation = " ".join(decoded_output.split()[4:])
-                if code in observation:
-                    decoded_outputs.append(observation)
+                        if 'start' in obsJSON['valuePeriod']:
+                            # "start" is the sleep duration
+                            duration = str(obsJSON['valuePeriod']['start'])
+                            startTime = self._check_doc(duration)
+                            if startTime == 0:
+                                normTime = 0
+                                continue
+                            
+                            obsJSON['valuePeriod']['start'] = (timeNow - timedelta(seconds=endTime) - timedelta(seconds=startTime)).strftime("%Y-%b-%d %X")
+                elif 'effectiveTiming' in obsJSON:
+                    normTime = 0
+                    if 'event' in obsJSON['effectiveTiming']:
+                        for t, observationTimeDifference in enumerate(obsJSON['effectiveTiming']['event']):
+                            eventTime = self._check_doc(str(observationTimeDifference))
+                            if eventTime == 0:
+                                normTime = 0
+                                break
+                            obsJSON['effectiveTiming']['event'][t] = (timeNow - timedelta(seconds=eventTime)).strftime("%Y-%b-%d %X")
+                            
+                            if eventTime > normTime:
+                               normTime =  eventTime
+                        if normTime == 0:
+                            continue
+                else:
+                    normTime = 0
+                    continue
+
+                if normTime > 0:
+                    decoded_outputs.append(decoded_output)
+                    json_outputs.append(obsJSON)
+                    normTime_list.append(normTime)
 
             if len(decoded_outputs) == 0:
                 continue
             else:
-                doc_index = self._check_document_similarity(decoded_outputs)
+                doc_index = self._check_document_similarity(input, decoded_outputs)
                 if doc_index == -1:
                     continue
-
-            if min_secs is None:
-                    min_secs =  max_secs = normTime
-            elif min_secs > normTime:
-                    min_secs = normTime
-            elif max_secs < normTime:
-                    max_secs = normTime
-                
-            resultsDF.loc[len(resultsDF.index)] = [normTime, decoded_outputs[doc_index]]
-            num_secs = max_secs - min_secs
-
-            if num_secs >= n_secs:
-                break
-        
-        #We want to generate past times
-        resultsDF = resultsDF.sort_values(by=['normTime'])
-        timeNow = datetime.now(timezone.utc) - timedelta(seconds=int(max_secs))
-
-        # Columns for ouput dataframe
-        columns = ['obsTime', 'sleepEnd', 'observation']
-        outputDF = self.pd.DataFrame(columns = columns)
-        for row in resultsDF.itertuples():
-            obsTime = (timeNow + timedelta(seconds=int(row.normTime))).strftime("%Y-%b-%d %X")
             
-            end = None
-            if '<duration>' in row.observation:  
-                end = obsTime
+            resultsDF.loc[len(resultsDF.index)] = [normTime_list[doc_index], json_outputs[doc_index]]
+            n_times = n_times + 1
 
-            outputDF.loc[len(outputDF.index)] = [obsTime, end, row.observation]
-        return outputDF
+        # There may be gaps in the results. We want to keep the best
+        # We coulcd simply just output everything, but n_days will be redundant
+        if len(resultsDF) > 0:
+            minNT = min(resultsDF['normTime'])
+            maxNT = max(resultsDF['normTime'])
+
+            # Get minimum and maximum times generated
+            n_keep_min = minNT
+            n_keep_max = maxNT
+          
+            times = sorted(list(resultsDF['normTime'].unique()))
+            n_between = 0
+
+            # Total number of seconds we wish to output
+            n_seconds = n_days * 86400
+
+            for i, t1 in enumerate(times):
+                # We only want to output up to n_days
+                max_time = min(t1 + n_seconds, maxNT)
+
+                # Check the future times
+                j = i + 1
+                for k, t2 in enumerate(times[j:]):
+                    if t2 > max_time:
+                        # We have all we need
+                        break
+                    if (k-i) > n_between:
+                        n_between = k - i
+                        n_keep_min = t1
+                        n_keep_max = t2
+                    if max_time == maxNT:
+                        # We have the maximum number
+                        break
+            resultsDF = resultsDF.loc[(resultsDF['normTime'] >= n_keep_min) & (resultsDF['normTime'] <= n_keep_max)]
+        resultsDF.drop(['normTime'], axis=1, inplace = True)
+
+        return resultsDF
