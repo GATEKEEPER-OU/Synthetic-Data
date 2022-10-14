@@ -10,7 +10,20 @@ These configuration correnspond to GK reference use cases, i.e., clinical studie
 
 ## Version 3 - Experimental Model - Transformer PT-1 (Generates and Evalutes data)
 
-Data can be now be gerenerated using a Transformer Model. The Model uses a word level approach and thus does not perform as well, in terms of loss, as the RNN character level approach. However, generating data is a lot quicker. Training is ongoing. There will not be a separate Evaluator for the generated data. Instead the generated data will be evaluated against a Doc2Vec model, created from the Training data, using document similarity metrics. This is not a general model. If evaluating please do so against the relevant Samsung Gatekeeper data.
+14/10/2022 - Code is no longer being updated. Exceptions are enhancements for deployment or high priority bug fixes.
+
+Data can be now be gerenerated using a Transformer Model. There will not be a separate Evaluator for the generated data. Instead the generated data is evaluated against a Doc2Vec model, created from the Training data, using document similarity metrics. This is not a general model. If evaluating please do so against the relevant Samsung Gatekeeper data.
+
+**Example of results**
+
+{'code': {'coding': [{'code': '93829-0', 'display': 'REM sleep duration', 'system': 'http://loinc.org'}]}, 'status': 'preliminary', 'valuePeriod': {'end': '2022-Sep-20 05:43:47', 'start': '2022-Sep-20 05:36:47'}, 'resourceType': 'Observation'}
+
+{'category': [{'coding': [{'code': 'vital-signs', 'display': 'Vital Signs', 'system': 'http://terminology.hl7.org/CodeSystem/observation-category'}], 'text': 'Vital Signs'}], 'code': {'coding': [{'code': '8867-4', 'display': 'Heart rate', 'system': 'http://loinc.org'}]}, 'effectiveDateTime': '2022-Sep-20 23:04:28', 'status': 'preliminary', 'valueQuantity': {'code': '/min', 'system': 'http://unitsofmeasure.org', 'unit': 'beats/minute', 'value': 79.0}, 'resourceType': 'Observation'}
+
+{'code': {'coding': [{'code': '93830-8', 'display': 'Light sleep duration', 'system': 'http://loinc.org'}]}, 'status': 'preliminary', 'valuePeriod': {'end': '2022-Sep-23 20:30:47', 'start': '2022-Sep-23 20:28:47'}, 'resourceType': 'Observation'}
+
+{'code': {'coding': [{'code': '93830-8', 'display': 'Light sleep duration', 'system': 'http://loinc.org'}]}, 'status': 'preliminary', 'valuePeriod': {'end': '2022-Sep-25 02:07:47', 'start': '2022-Sep-25 01:56:47'}, 'resourceType': 'Observation'}
+
 
 
 ## Version 2
