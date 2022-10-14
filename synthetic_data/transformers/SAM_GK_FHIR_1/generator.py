@@ -15,7 +15,7 @@ class SyntheticDataGenerator:
     self.bundle_path = bundle_path
     self.transformer_version = transformer_version
 
-  def generate(self, output_dir: str, n_patients: int, n_days=1):
+  def generate(self, output_dir: str, n_patients: int, n_days=1, max_times=10):
     for _ in range(n_patients):
 
       # Generate user ID
@@ -28,10 +28,14 @@ class SyntheticDataGenerator:
           data_generator = DataGenModel(self.bundle_path, self.transformer_version)
 
           # Run generate_single_user method of Data Generation Class
-          results_df = data_generator.generate_single_user(n_days)
+          results_df = data_generator.generate_single_user(n_days, max_times)
 
-          results_df.to_csv(output_file, index = False)
-          print(f'{output_file} has been generated')
+          if len(results_df) > 0:
+            #results_df.to_json(output_file, orient='records')
+            results_df.to_csv(output_file, index = False)
+            print(f'{output_file} has been generated')
+          else:
+            print('No results. Please try again')
       except Exception as e:
           print(e)
           # print('Error generating file')
