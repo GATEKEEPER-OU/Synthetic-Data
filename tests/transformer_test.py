@@ -28,7 +28,7 @@ class GeneratorTestSuite(unittest.TestCase):
 
   def test_generate(self):
     syntdatag = SyntheticDataGenerator(self.bundle_dir, self.transformer_vers)
-    syntdatag.generate(self.output_dir, 1, 1)
+    syntdatag.generate(self.output_dir, 1, 1, 1)
 
 if __name__ == '__main__':
     unittest.main()
