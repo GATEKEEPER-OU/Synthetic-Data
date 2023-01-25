@@ -7,7 +7,7 @@ class SyntheticDataGenerator:
   # Try various temperatures.
   # To date, there has not been enough experimentation to determine the best.
   # Will be done for the paper.
-  temperatures = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  temperatures = [1.0]
 
   def __init__(self, bundle_path):
     self.bundle_path = bundle_path
@@ -21,7 +21,7 @@ class SyntheticDataGenerator:
       # The model is dumb. It does not understand days.
       # Well actually, it can only understand what it has been trained on.
       # We will assume 50 max_timings per day.
-      max_timings = n_days * 50
+      max_timings = n_days * 5
 
       for i, event_temperature in enumerate(self.temperatures, start=1):
         # A File could be evaluated as fake in relation to the data that the model is trained on.
