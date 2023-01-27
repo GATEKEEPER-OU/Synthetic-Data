@@ -15,11 +15,15 @@ packages = [{include = "synthetic_data"}]
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/GATEKEEPER-OU/synthetic-data/issues"
 
+[tool.poetry.scripts]
+generator = "synthetic_data.app:main"
+
 [tool.poetry.dependencies]
 python = ">=3.9.0,<3.11"
 uuid = "^1.30"
 tensorflow-cpu = "^2.9.2"
 pandas = "^1.4.4"
+gensim = "^4.2.0"
 
 [build-system]
 requires = ["poetry-core"]
