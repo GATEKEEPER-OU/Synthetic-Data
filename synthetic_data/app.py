@@ -1,6 +1,8 @@
 import uuid
 from argparse import ArgumentParser, Namespace
 
+from synthetic_data.generator.generator import SyntheticDataGenerator
+
 
 def setup_argparser():
   arg_parser = ArgumentParser(
@@ -25,8 +27,9 @@ def main():
   print("aaaaaaaa")
   print(args)
 
-  # TODO ========== QUI =============
-
+  bundle_path = ''
+  sdg = SyntheticDataGenerator(bundle_path)
+  sdg.generate()
 
 if __name__=="__main__":
   main()
