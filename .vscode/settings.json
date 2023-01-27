@@ -10,5 +10,6 @@
     "**/__pycache__": true
   },
   "files.trimTrailingWhitespace": true,
-  "files.trimFinalNewlines": true
+  "files.trimFinalNewlines": true,
+  "python.analysis.typeCheckingMode": "basic"
 }
