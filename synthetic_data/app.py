@@ -29,7 +29,7 @@ def main():
 
   bundle_path = ''
   sdg = SyntheticDataGenerator(bundle_path)
-  sdg.generate()
+  sdg.generate(args.n_patients, args.n_patients)
 
 if __name__=="__main__":
   main()
