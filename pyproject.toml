@@ -16,7 +16,7 @@ packages = [{include = "synthetic_data"}]
 "Bug Tracker" = "https://github.com/GATEKEEPER-OU/synthetic-data/issues"
 
 [tool.poetry.scripts]
-generator = "synthetic_data.app:main"
+generate = "synthetic_data.app:main"
 
 [tool.poetry.dependencies]
 python = ">=3.9.0,<3.11"

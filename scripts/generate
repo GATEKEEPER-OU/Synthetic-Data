@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+cd $(dirname "$0")/..
+WORKING_DIR=$(pwd)
+
+poetry run generate \
+  --bundle-dir ./path/of/bundle \
+  --output-dir "${WORKING_DIR}/output"

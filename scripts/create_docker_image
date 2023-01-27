@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+
+cd $(dirname "$0")/..
+WORKING_DIR=$(pwd)
+
+IMAGE_NAME=gk-synthetics
+
+docker build -t ${IMAGE_NAME} ${WORKING_DIR}
