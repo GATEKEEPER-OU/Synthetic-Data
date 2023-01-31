@@ -155,7 +155,7 @@ class DataGenModel:
         # We want to generate past times
         timeNow = datetime.now(timezone.utc) - timedelta(seconds=int(maxTime))
 
-        columns =  ['obsTime', 'temperatue', 'observation']
+        columns =  ['obsTime', 'temperature', 'observation']
         resultsDF = self.pd.DataFrame(columns = columns)
 
         for ind in self.templateDF.index:
