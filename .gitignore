@@ -227,11 +227,9 @@ $RECYCLE.BIN/
 
 # Customs
 tests/out/*
+test/rejects/*
 tests/bundles/**/*.h5
 tests/bundles/**/*.csv
 tests/bundles/**/*.json
 tests/bundles/**/sourceTokenLayer/*
-tests/bundles/transformers/embeddings/*
-tests/bundles/transformers/PT_*/SAM_FHIR/*
-tests/bundles/transformers/PT_*/*TokenLayer/*
 

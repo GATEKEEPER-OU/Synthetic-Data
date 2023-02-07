@@ -7,26 +7,21 @@ class DataGenModel:
     The codings file should exist in the codings directory.
 
     Arguments:
-        max_timings : int
-            The maximum number of timings, or observation times, to generate.
-            At least 1 will be generated. The actual number generated could be less due to:
-                the randomly selected user not having enough timings,
-                the start timing being too late in the sequence timings, or
-                a prediction error prematurely halting the timing generation.
-        model_dir: str
-            The directory that holds models th
-        output_file (Default is None):
-            The filename of a csv file that will hold the generated data.
-            If None, a dataframe is returned, Otherwise the data is written to the output file.
-        timing_temperature (Default = 0.1)
-            Optional. Recommend this is kept at the default
-        event_temperature (Default = 0.3)
-            Optional. Recommend values between 0.1 and 1
+        max_days : int
+            The maximum number of days to generate.
+            The actual number generated could be less due to:
+                the randomly selected user not having enough days, or
+                a prediction error
+        model_dir : str
+            The directory that holds models
+        temperature : float
+            Optional. Default is 1.0
+        early_stop : int
+            Optional. Default is 0 indicting no early stopping
 
     Output:
         generate_single_user method:
-            If output file is None, a dataframe is returned to the calling program.
-            Otherwise, the output file is created and None is returned to the calling progam.
+            A JSON array and a dataframe is returned to the calling program.
 
     To run:
         Import the class
@@ -34,267 +29,168 @@ class DataGenModel:
         Run the generate_single_user method
     '''
     import numpy as np
-    from random import randint
-    import json
+    from random import randint, shuffle
     import pandas as pd
     import os
+    import warnings
+    import tempfile
+    import synthetic_data.generator.datagen.postprocess as postprocess
 
     import tensorflow as tf
 
-    def __init__ (self,
-      max_timings: int,
-      model_dir: str,
-      output_file = None,
-      timing_temperature = 0.1,
-      event_temperature = 0.3
-    ):
-        self.max_timings = max(1, max_timings)
-        self.output_file = output_file
-        self.model_dir = model_dir
-        self.timing_temperature = timing_temperature
-        self.event_temperature = event_temperature
+    def __init__ (self, max_days:int, model_dir: str, temperature=1.0, early_stop=0):
+        
+        self.temperature = temperature
+        self.early_stop = early_stop
+        self.EVENT_START_TOKEN = "%"
+        self.EVENT_END_TOKEN = ";"
 
-        self.MAX_NUM_REAL_USERS = 86
-        self.TIMING_SEQ_LEN = 6
-        self.EVENT_PADDING_END_TOKEN = ";"
-        self.EVENT_UNKNOWN_TOKEN = '[UNK]'
+        emodel = self.os.path.join(model_dir, 'models', 'event_model.h5')
 
-        # The number of next characters we want to generate before giving up.
-        # # This is lower than the actual maximum sequence length to account for the starting characters
-        self.EVENT_SEQ_LEN = 620
+        # Load Model
+        self.warnings.filterwarnings("ignore", category=DeprecationWarning) 
+        self.model = self.tf.keras.models.load_model(emodel)
 
-        # Load the models
-        tmodel = self.os.path.join(self.model_dir, 'models', 'timing_model.h5')
-        emodel = self.os.path.join(self.model_dir, 'models', 'event_model.h5')
+        # Load 
+        tokeniser_dir = self.os.path.join(model_dir, 'vocabulary', 'sourceTokenLayer')
+        source_tokens_model = self.tf.keras.models.load_model(tokeniser_dir, compile=False)
+        self.sourceTextProcessor = source_tokens_model.layers[0]
 
-        self.timing_model = self.tf.keras.models.load_model(tmodel)
-        self.event_model = self.tf.keras.models.load_model(emodel)
+        # Get vocab
+        obs_vocab = self.sourceTextProcessor.get_vocabulary()
+        self.obs_index_lookup = dict(zip(range(len(obs_vocab)), obs_vocab))
 
-        # Load the vocabulary
-        tvocab = self.os.path.join(self.model_dir, 'vocabulary', 'timings_vocab.json')
-        evocab = self.os.path.join(self.model_dir, 'vocabulary', 'events_vocab.json')
+        # Load Prompts
+        codings_file = self.os.path.join(model_dir, 'codings', 'codings.csv')
+        codingsDF = self.pd.read_csv(codings_file)
 
-        # Timings
-        tv = open(tvocab, "r")
+        # Add columns for easier manipulation
+        codingsDF['patients'] = codingsDF['prompts'].str.split().str[0]
+        codingsDF['timestep'] = codingsDF['prompts'].str.split().str[1]
+        codingsDF['normTime'] = codingsDF['prompts'].str.split().str[2]
+        codingsDF['normTime'] = codingsDF['normTime'].astype(str).astype(int)
+        codingsDF['dayNum'] = codingsDF['normTime'].floordiv(86400).add(1)
+        
+        # Get Patient Template, start day and end day
+        patients_list = list(codingsDF['patients'].unique())
+        self.shuffle(patients_list)
 
-        # Create timing mappings
-        self.idx_to_word = self.json.load(tv)
-        self.idx_to_word = dict((int(idx), word) for (idx, word) in self.idx_to_word.items())
-        self.word_to_idx = dict((word, int(idx)) for (idx, word) in self.idx_to_word.items())
+        # Default if something goes wrong
+        patient_template = patients_list[0]
+        start_day = 1
+        end_day = max(1, max_days)
 
-        # Length of the vocabulary
-        self.timings_vocab_size = len(self.idx_to_word) + 1
-
-        # Events
-        ev = open(evocab, "r")
-
-        # Create event mapings
-        self.idx_to_char = self.json.load(ev)
-        self.idx_to_char = dict((int(idx), char) for (idx, char) in self.idx_to_char.items())
-        self.char_to_idx = dict((char, int(idx)) for (idx, char) in self.idx_to_char.items())
-
-        # Length of the vocabulary
-        self.events_vocab_size = len(self.idx_to_char)
-
-        # codings file
-        self.codings_file = self.os.path.join(self.model_dir, 'codings', 'codings.csv')
-
-
-    def _generate_seed_text(self, coding):
-        # Assumes that "code user" exists
-        coding_len = len(coding)
-        start_code_indx = self.randint(0, coding_len-1)
-        start_code = coding[start_code_indx]
-        user = self.randint(1, self.MAX_NUM_REAL_USERS)
-        if user == 82:
-          # There was an issue with user 82, so this is rejected
-          user = 83
-        return start_code + " " + str(user)
-
-
-    def _get_codings(self):
-      codingDF = self.pd.read_csv(self.codings_file)
-      coding = codingDF['coding'].values.tolist()
-      display = codingDF['display'].values.tolist()
-      guide_text = codingDF['guide_text'].values.tolist()
-      return coding, display, guide_text
-
-
-    def _generate_timings(self, seed_text, num_next_words):
-        '''
-        Generate timings from a seed text.
-
-        Arguments:
-          seed_text
-            Either <coding>, <coding user>, <coding user time>
-          num_next_words
-            Number of "words" to generate.
-        '''
-        seed_len = len(seed_text.split())
-        total_len = seed_len + num_next_words
-
-        if (seed_len > 3) or  (total_len > self.TIMING_SEQ_LEN):
-            print("Error in input")
-        else:
-            for _ in range(num_next_words):
-                token_list = [self.word_to_idx[s] for s in seed_text.split()]
-                #token_list = self.tf.expand_dims(token_list, 0)
-
-                token_list = self.tf.keras.utils.pad_sequences([token_list], maxlen=self.TIMING_SEQ_LEN-1, padding='pre')
-
-                # Run model to infer next probabilities
-                predicted = self.timing_model.predict(token_list, verbose=0)
-
-                if self.timing_temperature <= 0.0:
-                    # Prediction is the ID associated with the highest logit.
-                    predicted_id = self.np.argmax(predicted, axis=1)[-1]
+        for patient in patients_list:
+            num_daysDF = codingsDF[(codingsDF['patients'] == patient) & (codingsDF['dayNum'] >= max_days)]
+            num_days = len(num_daysDF)
+            if num_days > 0:
+                num_days = num_daysDF['dayNum'].max()
+                patient_template = patient
+                days_delta = num_days - max_days
+                if days_delta == 0:
+                    start_day = 1
+                    end_day = max(1, max_days)
                 else:
-                    # Get random next word
-                    predicted_id = predicted / self.timing_temperature
+                    days_delta = days_delta + 1
+                    start_day = self.randint(1, days_delta)
+                    if len(num_daysDF.loc[num_daysDF['dayNum'] == start_day]) == 0:
+                        start_day = 1
+                    end_day = max(start_day, start_day + max_days - 1)
+                break
+        
+        self.templateDF = codingsDF[codingsDF['patients'] == patient_template]
+        self.templateDF = self.templateDF.loc[(self.templateDF['dayNum'] >= start_day) & (self.templateDF['dayNum'] <= end_day)]
 
-                    # Use numpy here, instead of Tensorflow?
-                    predicted_id = self.tf.random.categorical(predicted_id, num_samples=1)[-1,0].numpy()
 
-                output_word = self.idx_to_word[predicted_id]
-                seed_text += " " + (output_word)
-        return seed_text
+    def _softmax(self, x):
+      max_x = self.np.max(x)
+      exp_x = self.np.exp(x - max_x)
+      sum_exp_x = self.np.sum(exp_x)
+      sm_x = exp_x/sum_exp_x
+      return sm_x
 
 
-    def _generate_events(self, start_string):
-        '''
-        Generate events from a start string.
-
-        Arguments:
-            start_string
-        '''
-
-        # Converting our start string to numbers (vectorizing)
-        input_eval = [self.char_to_idx[s] for s in start_string]
-        input_eval = self.tf.expand_dims(input_eval, 0)
-
-        # Create a mask to prevent "[UNK]" from being generated.
-        skipid = self.char_to_idx[self.EVENT_UNKNOWN_TOKEN]
-        skip_id = self.tf.constant([[skipid]], dtype=self.np.int64)
-
-        sparse_mask = self.tf.SparseTensor(
-        # Put a -inf at each bad index.
-        values=[-float('inf')]*len(skip_id),
-                indices=skip_id,
-                # Match the shape to the vocabulary
-                dense_shape=[self.events_vocab_size])
-
-        prediction_mask = self.tf.sparse.to_dense(sparse_mask)
-
+    # The prediction loop
+    def _generate_events(self, start_string, max_sequence_len):
+        input_eval = start_string
+ 
         # Empty string to store our results
         text_generated = []
-
-        self.event_model.reset_states()
-
-        for i in range(self.EVENT_SEQ_LEN):
+ 
+        self.model.reset_states()
+        #num_samples = vocab_size + 1
+    
+        for i in range(max_sequence_len):
+            
             # Run Model
-            predictions = self.event_model.predict(input_eval, verbose=0)
-
-            # remove the batch dimension
+            tokenized_input= self.sourceTextProcessor([input_eval])
+            
+            predictions = self.model.predict(tokenized_input, verbose=0)
             predictions = self.tf.squeeze(predictions, 0)
+                    
+            preds = self.np.asarray(predictions)[-1].astype("float64")
+            preds = preds / self.temperature
+            preds = self._softmax(preds)
 
-            # Apply the prediction mask: prevent "[UNK]" from being generated.
-            predictions = predictions + prediction_mask
+            preds = self.np.random.multinomial(1, preds, 1)
+            sampled_token_index = self.np.argmax(preds)
 
-            if self.event_temperature <= 0.0:
-                # Prediction is the ID associated with the highest logit.
-                predicted_id = self.np.argmax(predictions, axis=1)[-1]
-            else:
-                # Low temperatures results in more predictable text
-                # Higher temperatures results in more surprising text.
-                # Experiment to find the best setting.
-                predictions = predictions / self.event_temperature
-                predicted_id = self.tf.random.categorical(predictions, num_samples=1)[-1,0].numpy()
+            sampled_token = self.obs_index_lookup[sampled_token_index]
 
-                # EXPERIMENTATION: Get a number of samples and select the ID that occurs the most
-                # num_samples = self.events_vocab_size + 1
-                # predicted_ids = self.tf.random.categorical(predictions, num_samples=num_samples)[-1,0].numpy()
-                # predicted_id = predicted_ids.max()
+            text_generated.append(sampled_token)
 
-            next_char = self.idx_to_char[predicted_id]
-            if next_char == self.EVENT_PADDING_END_TOKEN:
+            if sampled_token == self.EVENT_END_TOKEN:
                 break
-
-            text_generated.append(next_char)
 
             # We pass the predicted token as the next input to the model
             # along with the previous hidden state
-            input_eval = self.tf.expand_dims([predicted_id], 0)
-        return (start_string + ''.join(text_generated))
+            input_eval = sampled_token
 
-
+        self.text = start_string + ''.join(text_generated)
+        
     # Generate data for one user
-    def generate_single_user(self):
+    def generate_single_user(self, userID:str):
         from datetime import timezone, datetime, timedelta
-
-        coding, display, guide_text = self._get_codings()
-
-        # Generate Timings
-        timing = []
-        start_text = self._generate_seed_text(coding)
-        user = start_text.split()[1]
-
-        for i in range(self.max_timings):
-            if i == 0:
-                # The first call will generate 2 timings
-                result = self._generate_timings(start_text, 4)
-                timings = " ".join(result.split()[0:3])
-            elif i == 1:
-                # We already have the timing
-                timings = " ".join(result.split()[3:])
-            else:
-                # Now the 2nd timing of the previous is the 1st timing of the next
-                start_timing = timings
-                timings = self._generate_timings(start_timing, 3)
-                timings = " ".join(timings.split()[3:])
-
-            # Enhancement: Implement Retries
-            if (timings.split()[1] != user) or not timings.split()[-1].isdigit() or (timings.split()[0] not in coding):
-                print("Incorrect timing generated")
-                # Exit if returned user is differrent to input user or if time is not an integer or coding is not known
-                break
-
-            timing.append(timings)
-
-        # Remove duplicates and sort by time.
-        # There were duplicates in the raw data, but we removed them, to avoid the risk of generating too many duplicates.
-        timings = list(set(timing))
-
-        # Sort timings by time
-        def _by_time(ele):
-            return int(ele.split()[2])
-
-        timings = sorted(timings, key=_by_time)
-        maxTime = timings[-1].split()[2]
-
-        columns = ['obsTime', 'Temperature', 'normTime', 'coding', 'observation']
-        resultsDF = self.pd.DataFrame(columns = columns)
-
+        
+        maxTime = self.templateDF['normTime'].max()
+        
         # We want to generate past times
         timeNow = datetime.now(timezone.utc) - timedelta(seconds=int(maxTime))
 
-        # Generate Events
-        for j in timings:
-            code = j.split()[0]
-            coding_index = coding.index(code)
+        columns =  ['obsTime', 'temperatue', 'observation']
+        resultsDF = self.pd.DataFrame(columns = columns)
 
-            start_string = j + " {'display': '" + display[coding_index] + "', " + guide_text[coding_index]
-            event = self._generate_events(start_string)
-            observation = " ".join(event.split()[3:])
+        num_records = 0
 
-            normTime = j.split()[2]
-            generatedTime = timeNow + timedelta(seconds=int(normTime))
-            obsTime = generatedTime.strftime("%Y-%b-%d %X")
+        with self.tempfile.NamedTemporaryFile() as temp:
+            filename = temp.name + '.csv'
+            resultsDF.to_csv(filename, index=False)
 
-            resultsDF.loc[len(resultsDF.index)] = [obsTime, self.event_temperature, normTime, code, observation]
+            for ind in self.templateDF.index:
+                prompt = self.templateDF['prompts'][ind]
+                prompt = prompt + ' "' + self.templateDF['display'][ind] + '", '
+                start_text = self.EVENT_START_TOKEN + prompt
+            
+                self._generate_events(start_text, 870)
+        
+                if self.text[-1] != ';':
+                    continue
 
-            if self.output_file is None:
-                pass
-            else:
-                resultsDF.to_csv(self.output_file, index = False)
-                resultsDF = None
-        return resultsDF
+                generatedTime = timeNow + timedelta(seconds=int(self.templateDF['normTime'][ind]))
+                obsTime = generatedTime.isoformat(timespec='seconds')
+                self.text = self.text[1:-1]
+                self.text = " ".join(self.text.split()[3:])
+ 
+                resultsDF = self.pd.DataFrame({columns[0]: [obsTime],
+                   columns[1]: [self.temperature],
+                   columns[2]:[self.text]})
+                resultsDF.to_csv(filename, mode='a', header=False, index=False)
+                
+                # Check if early stopping needs to be enforced
+                num_records = num_records + 1
+                if self.early_stop > 0 and num_records >= self.early_stop:
+                    break
+            bundleJSON = self.postprocess.convert_to_json(filename, userID)
+            temp.close()
+
+        return bundleJSON
