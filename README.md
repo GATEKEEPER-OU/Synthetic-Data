@@ -8,24 +8,6 @@ These configuration correnspond to GK reference use cases, i.e., clinical studie
 ## N.B. As is the case with any text generation Machine Learning model, a model trained to a high degree of accuracy can be used to reconstruct the training data. Therefore the trained model associated with this project should not be made available to those who have not been granted access to the original data.
 
 
-## Version 3 - Experimental Model - Transformer PT-1 (Generates and Evalutes data)
-
-14/10/2022 - Code is no longer being updated. Exceptions are enhancements for deployment or high priority bug fixes.
-
-Data can be now be gerenerated using a Transformer Model. There will not be a separate Evaluator for the generated data. Instead the generated data is evaluated against a Doc2Vec model, created from the Training data, using document similarity metrics. This is not a general model. If evaluating please do so against the relevant Samsung Gatekeeper data.
-
-**Example of results**
-
-{'code': {'coding': [{'code': '93829-0', 'display': 'REM sleep duration', 'system': 'http://loinc.org'}]}, 'status': 'preliminary', 'valuePeriod': {'end': '2022-Sep-20 05:43:47', 'start': '2022-Sep-20 05:36:47'}, 'resourceType': 'Observation'}
-
-{'category': [{'coding': [{'code': 'vital-signs', 'display': 'Vital Signs', 'system': 'http://terminology.hl7.org/CodeSystem/observation-category'}], 'text': 'Vital Signs'}], 'code': {'coding': [{'code': '8867-4', 'display': 'Heart rate', 'system': 'http://loinc.org'}]}, 'effectiveDateTime': '2022-Sep-20 23:04:28', 'status': 'preliminary', 'valueQuantity': {'code': '/min', 'system': 'http://unitsofmeasure.org', 'unit': 'beats/minute', 'value': 79.0}, 'resourceType': 'Observation'}
-
-{'code': {'coding': [{'code': '93830-8', 'display': 'Light sleep duration', 'system': 'http://loinc.org'}]}, 'status': 'preliminary', 'valuePeriod': {'end': '2022-Sep-23 20:30:47', 'start': '2022-Sep-23 20:28:47'}, 'resourceType': 'Observation'}
-
-{'code': {'coding': [{'code': '93830-8', 'display': 'Light sleep duration', 'system': 'http://loinc.org'}]}, 'status': 'preliminary', 'valuePeriod': {'end': '2022-Sep-25 02:07:47', 'start': '2022-Sep-25 01:56:47'}, 'resourceType': 'Observation'}
-
-
-
 ## Version 2
 
 The SDG trains different RNN models and is developed in Python / Tensorflow. It can be used to generate a dataset about a cohort of synthetic patients for a number of days.
@@ -43,12 +25,10 @@ The Generator requires access to a models directory.
 
 The model directory should consist of:
 
-- model/timing_model.h5
 - model/event_model.h5
-- vocabulary/timings_vocab.json
-- vocabulary/events_vocab.json
+- vocabulary/sourceTokenLayer/*
 - codings/codings.csv
 
-2. Evaluator
+2. Evaluator (Training-Notebooks)
 
 Various statistical analysis are carried out. Depending on the results the data is divided into "real" and "fake".
