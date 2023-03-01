@@ -73,4 +73,4 @@ for p in Path('samsung_data/original').rglob('*'):
 
         # Writing to file
         with open(filename, "a") as outfile:
-            outfile.write(json_object)
+            outfile.write(json_object + "\n")
