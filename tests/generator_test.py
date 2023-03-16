@@ -31,6 +31,7 @@ class GeneratorTestSuite(unittest.TestCase):
 
   def test_generate(self):
     syntdatag = SyntheticDataGenerator(self.bundle_dir)
+    # early_stop - Stop after generating x timestamps
     syntdatag.generate(self.output_dir, self.rejects_dir, 1, 1, early_stop=10)
 
 if __name__ == '__main__':
